@@ -1,0 +1,9 @@
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.csproj.AssemblyReference.cache
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.ElevationChartForm.resources
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.MainForm.resources
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.Properties.Resources.resources
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.csproj.GenerateResource.cache
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.GeneratedMSBuildEditorConfig.editorconfig
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.AssemblyInfoInputs.cache
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.AssemblyInfo.cs
+D:\Document\SatTracker\SatTracker_Skỳield\obj\Debug\net5.0-windows8.0\SatTracker.csproj.CoreCompileInputs.cache
