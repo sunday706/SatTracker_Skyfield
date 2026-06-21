@@ -119,3 +119,111 @@
 16/12/2025 15:03:08: Running satellite_passes.exe with TLE file: SatTLE.txt
 16/12/2025 15:09:50: Running satellite_passes.exe with TLE file: SatTLE.txt
 11/04/2026 07:52:25: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/11/2026 12:34:03 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:18:31 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:28:03 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:28:03 PM: Error running Python executable: An error occurred trying to start process 'satellite_passes.exe' with working directory 'D:\Document\SatTracker_Skyfield-master\bin\Debug\net8.0-windows8.0'. The system cannot find the file specified.
+6/15/2026 2:33:14 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:33:20 PM: Python executable error: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 263, in main
+  File "satellite_passes.py", line 39, in read_observer_coordinates
+FileNotFoundError: [Errno 2] No such file or directory: 'config.json'
+
+6/15/2026 2:33:20 PM: Error running Python executable: Lỗi chạy file thực thi: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 263, in main
+  File "satellite_passes.py", line 39, in read_observer_coordinates
+FileNotFoundError: [Errno 2] No such file or directory: 'config.json'
+
+6/15/2026 2:34:09 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:34:33 PM: Python executable error: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 270, in main
+  File "satellite_passes.py", line 102, in calculate_satellite_data
+TypeError: 'Timescale' object is not subscriptable
+
+6/15/2026 2:34:33 PM: Error running Python executable: Lỗi chạy file thực thi: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 270, in main
+  File "satellite_passes.py", line 102, in calculate_satellite_data
+TypeError: 'Timescale' object is not subscriptable
+
+6/15/2026 2:36:50 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:37:01 PM: Python executable error: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 270, in main
+  File "satellite_passes.py", line 102, in calculate_satellite_data
+TypeError: 'Timescale' object is not subscriptable
+
+6/15/2026 2:37:01 PM: Error running Python executable: Lỗi chạy file thực thi: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 270, in main
+  File "satellite_passes.py", line 102, in calculate_satellite_data
+TypeError: 'Timescale' object is not subscriptable
+
+6/15/2026 2:39:47 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/15/2026 2:39:54 PM: Python executable error: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 270, in main
+  File "satellite_passes.py", line 102, in calculate_satellite_data
+TypeError: 'Timescale' object is not subscriptable
+
+6/15/2026 2:39:54 PM: Error running Python executable: Lỗi chạy file thực thi: Traceback (most recent call last):
+  File "satellite_passes.py", line 280, in <module>
+  File "satellite_passes.py", line 270, in main
+  File "satellite_passes.py", line 102, in calculate_satellite_data
+TypeError: 'Timescale' object is not subscriptable
+
+6/17/2026 3:13:47 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/17/2026 3:22:47 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/17/2026 3:24:09 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/17/2026 3:24:31 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/17/2026 3:25:12 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/17/2026 3:26:03 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/17/2026 3:26:29 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:22:47 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:25:56 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:28:31 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:31:06 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:33:05 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:34:00 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 10:37:02 AM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 12:19:15 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 12:21:22 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 12:28:26 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 12:30:04 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 2:38:45 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 2:46:38 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 2:51:10 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 2:53:17 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 2:59:29 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:01:05 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:05:50 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:08:28 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:09:18 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:11:57 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:14:11 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:17:23 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:18:26 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:22:17 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+6/18/2026 3:24:42 PM: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 21:02:33: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 21:05:31: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 21:24:00: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 21:51:22: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 22:12:47: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 22:24:09: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 22:40:01: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 22:50:06: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 22:50:42: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 22:56:55: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 23:04:17: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 23:15:47: Running satellite_passes.exe with TLE file: SatTLE.txt
+21/06/2026 23:53:10: Running satellite_passes.exe with TLE file: SatTLE.txt
+22/06/2026 00:02:50: Running satellite_passes.exe with TLE file: SatTLE.txt
+22/06/2026 00:04:35: Running satellite_passes.exe with TLE file: SatTLE.txt
+22/06/2026 00:05:25: Running satellite_passes.exe with TLE file: SatTLE.txt
+22/06/2026 00:06:36: Running satellite_passes.exe with TLE file: SatTLE.txt
+22/06/2026 00:11:26: Running satellite_passes.exe with TLE file: SatTLE.txt
+22/06/2026 00:17:45: Running satellite_passes.exe with TLE file: SatTLE.txt

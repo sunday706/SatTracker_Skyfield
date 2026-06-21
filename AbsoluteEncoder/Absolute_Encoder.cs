@@ -55,16 +55,30 @@ namespace SatTracker.AntenControl
         // ===== Public latest values =====
         public float AziDeg { get; private set; }
         public float EleDeg { get; private set; }
+        public float RawAziDeg { get; private set; }
+        public float RawEleDeg { get; private set; }
         public bool AziErr { get; private set; }
         public bool EleErr { get; private set; }
+        public bool HasValidData => IsConnected &&
+            _lastGoodLineUtc != DateTime.MinValue &&
+            (DateTime.UtcNow - _lastGoodLineUtc).TotalMilliseconds <= NoDataTimeoutMs;
+        public bool IsAziReady => HasValidData && !_e1Stuck && !AziErr;
+        public bool IsEleReady => HasValidData && !_e2Stuck && !EleErr;
 
-        public EncoderComReader(Form host, TextBox AziPos, TextBox ElePos, string com, int baud)
+        private float _aziHomeRawDeg;
+        private float _eleHomeRawDeg;
+        private float _aziHomeDeg;
+        private float _eleHomeDeg;
+
+        public EncoderComReader(Form host, TextBox AziPos, TextBox ElePos, string com, int baud,
+            float aziHomeRawDeg = 0, float eleHomeRawDeg = 0, float aziHomeDeg = 0, float eleHomeDeg = 0)
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _com = com;
             _baud = baud;
             _txbAziPos = AziPos;
             _txbElePos = ElePos;
+            ApplyHomeCalibration(aziHomeRawDeg, eleHomeRawDeg, aziHomeDeg, eleHomeDeg);
 
             _reconnectTimer = new System.Windows.Forms.Timer
             {
@@ -80,6 +94,18 @@ namespace SatTracker.AntenControl
 
             // auto dispose khi form đóng
             _host.FormClosing += Host_FormClosing;
+        }
+
+        public void ApplyHomeCalibration(float aziHomeRawDeg, float eleHomeRawDeg, float aziHomeDeg, float eleHomeDeg)
+        {
+            _aziHomeRawDeg = aziHomeRawDeg;
+            _eleHomeRawDeg = eleHomeRawDeg;
+            _aziHomeDeg = aziHomeDeg;
+            _eleHomeDeg = eleHomeDeg;
+
+            AziDeg = RawAziDeg - _aziHomeRawDeg + _aziHomeDeg;
+            EleDeg = RawEleDeg - _eleHomeRawDeg + _eleHomeDeg;
+            UpdateUiNow();
         }
 
         private void Host_FormClosing(object? sender, FormClosingEventArgs e) => Dispose();
@@ -218,8 +244,10 @@ namespace SatTracker.AntenControl
             var m = LineRx.Match(line);
             if (!m.Success) return;
 
-            AziDeg = float.Parse(m.Groups["e1ang"].Value, CultureInfo.InvariantCulture);
-            EleDeg = float.Parse(m.Groups["e2ang"].Value, CultureInfo.InvariantCulture);
+            RawAziDeg = float.Parse(m.Groups["e1ang"].Value, CultureInfo.InvariantCulture);
+            RawEleDeg = float.Parse(m.Groups["e2ang"].Value, CultureInfo.InvariantCulture);
+            AziDeg = RawAziDeg - _aziHomeRawDeg + _aziHomeDeg;
+            EleDeg = RawEleDeg - _eleHomeRawDeg + _eleHomeDeg;
 
             AziErr = m.Groups["e1err"].Value != "0";
             EleErr = m.Groups["e2err"].Value != "0";

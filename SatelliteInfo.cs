@@ -17,7 +17,7 @@ namespace SatTracker
         public List<double> AzimuthAngles { get; set; }
         public List<double> ElevationAngles { get; set; }
         public List<double> LatitudeAngles { get; set; }
-        public List<double> LongitudeAngles { get; set; }
+        public List<double> LongtitudeAngles { get; set; }
     }
     public class SatelliteInfoDisplay
     {

@@ -1,4 +1,4 @@
-('D:\\SatTracker\\SatTracker_Skỳield\\build\\satellite_passes\\PYZ-00.pyz',
+('D:\\Document\\SatTracker_Skyfield\\build\\satellite_passes\\PYZ-00.pyz',
  [('__future__',
    'C:\\Users\\XIAOMI\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\__future__.py',
    'PYMODULE'),

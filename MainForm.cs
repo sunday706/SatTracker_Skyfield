@@ -9,6 +9,7 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using SatTracker.AntenControl;
+using System;
 using System.Configuration;
 using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 using System.Diagnostics;
@@ -52,12 +53,14 @@ namespace SatTracker
 
         // Encoder reader for receiving data
         private EncoderComReader? _encReader;
+        private System.Windows.Forms.Timer? _antennaTrackingTimer;
+        private bool _antennaTrackingBusy;
 
         private float GetFloatSetting(string name, float defaultValue)
         {
             var strValue = ConfigurationManager.AppSettings[name];
             float result;
-            if (float.TryParse(strValue, out result))
+            if (float.TryParse(strValue, NumberStyles.Number, CultureInfo.InvariantCulture, out result))
             {
                 return result;
             }
@@ -143,7 +146,7 @@ namespace SatTracker
             Buffer.BlockCopy(bytes2, 0, result, 4, 4);
             return result;
         }
-        private void dataGridSatellites_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        private void dataGridViewSatellites_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             var dgv = sender as DataGridView;
             if (dgv.Columns.Contains("Name"))
@@ -153,7 +156,17 @@ namespace SatTracker
             if (dgv.Columns.Contains("EndVisibleTime"))
                 dgv.Columns["EndVisibleTime"].HeaderText = "Thời gian kết thúc";
         }
-        private void dataGridSatellites_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        private void dataGridInforSatellites_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            var dgv = sender as DataGridView;
+            if (dgv.Columns.Contains("Name"))
+                dgv.Columns["Name"].HeaderText = "Tên VT";
+            if (dgv.Columns.Contains("StartVisibleTime"))
+                dgv.Columns["StartVisibleTime"].HeaderText = "Thời gian bắt đầu";
+            if (dgv.Columns.Contains("EndVisibleTime"))
+                dgv.Columns["EndVisibleTime"].HeaderText = "Thời gian kết thúc";
+        }
+        private void dataGridViewSatellites_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             var dgv = sender as DataGridView;
 
@@ -175,7 +188,52 @@ namespace SatTracker
                 }
             }
         }
-        private void dataGridSatellites_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        private void dataGridInforSatellites_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            var dgv = sender as DataGridView;
+
+            if (dgv.Columns[e.ColumnIndex].Name == "StartVisibleTime")
+            {
+                if (e.Value is DateTime dt)
+                {
+                    e.Value = dt.ToString("HH:mm:ss - dd/MM/yyyy");
+                    e.FormattingApplied = true;
+                }
+            }
+
+            if (dgv.Columns[e.ColumnIndex].Name == "EndVisibleTime")
+            {
+                if (e.Value is DateTime dt)
+                {
+                    e.Value = dt.ToString("HH:mm:ss - dd/MM/yyyy");
+                    e.FormattingApplied = true;
+                }
+            }
+        }
+        private void dataGridViewSatellites_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            var grid = sender as DataGridView;
+            var rowIdx = (e.RowIndex + 1).ToString();
+
+            var centerFormat = new StringFormat()
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+
+            var headerBounds = new Rectangle(
+                e.RowBounds.Left,
+                e.RowBounds.Top,
+                grid.RowHeadersWidth,
+                e.RowBounds.Height);
+
+            e.Graphics.DrawString(rowIdx,
+                this.Font,
+                SystemBrushes.ControlText,
+                headerBounds,
+                centerFormat);
+        }
+        private void dataGridInforSatellites_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
             var grid = sender as DataGridView;
             var rowIdx = (e.RowIndex + 1).ToString();
@@ -200,14 +258,29 @@ namespace SatTracker
         }
         private async void Form1_Load(object sender, EventArgs e)
         {
-            dataGridViewSatellites.DataBindingComplete += dataGridSatellites_DataBindingComplete;
-            dataGridInforSatellites.DataBindingComplete += dataGridSatellites_DataBindingComplete;
-            dataGridViewSatellites.RowPostPaint += dataGridSatellites_RowPostPaint;
+            dataGridViewSatellites.DataBindingComplete += dataGridViewSatellites_DataBindingComplete;        
+            dataGridViewSatellites.RowPostPaint += dataGridViewSatellites_RowPostPaint;
             dataGridViewSatellites.RowHeadersVisible = true;
-            dataGridInforSatellites.RowPostPaint += dataGridSatellites_RowPostPaint;
+            dataGridViewSatellites.CellFormatting += dataGridViewSatellites_CellFormatting;
+
+            dataGridInforSatellites.DataBindingComplete += dataGridInforSatellites_DataBindingComplete;
+            dataGridInforSatellites.RowPostPaint += dataGridInforSatellites_RowPostPaint;
             dataGridInforSatellites.RowHeadersVisible = true;
-            dataGridViewSatellites.CellFormatting += dataGridSatellites_CellFormatting;
-            dataGridInforSatellites.CellFormatting += dataGridSatellites_CellFormatting;
+            dataGridInforSatellites.CellFormatting += dataGridInforSatellites_CellFormatting;
+
+            string aziServoCom = GetStringSetting("AziServoCom", "COM8");
+            string eleServoCom = GetStringSetting("EleServoCom", "COM9");
+            string encoderCom = GetStringSetting("EncoderCom", "COM3");
+            int modbusBaud = GetIntSetting("ModbusBaud", 19200);
+            int encoderBaud = GetIntSetting("EncoderBaud", 115200);
+            int defaultRpm = GetIntSetting("DefaultRpm", 300);
+            float aziHomeRawDeg = GetFloatSetting("AziHomeRawDeg", 0);
+            float eleHomeRawDeg = GetFloatSetting("EleHomeRawDeg", 0);
+            float aziHomeDeg = GetFloatSetting("AziHomeDeg", 0);
+            float eleHomeDeg = GetFloatSetting("EleHomeDeg", 0);
+
+            txbAziSpeed.Text = defaultRpm.ToString(CultureInfo.InvariantCulture);
+            txbEleSpeed.Text = defaultRpm.ToString(CultureInfo.InvariantCulture);
 
             _manual = new Manual_Control(
                 this,
@@ -221,7 +294,7 @@ namespace SatTracker
                     TxbPositionDeg = txbAziPos,
                     LblStatus = lblAziStt,
                     TxbTargetPosDeg = txbAziTargetPos,
-                    BtnGo = btnAziGo               
+                    BtnGo = btnAziGo
                 },
 
                 new Manual_Control.AxisUi
@@ -231,24 +304,27 @@ namespace SatTracker
                     TxbSpeedRpm = txbEleSpeed,
                     TxbPositionDeg = txbElePos,
                     LblStatus = lblEleStt,
-                    TxbTargetPosDeg = txbEleTargetPos,   
-                    BtnGo = btnEleGo                 
+                    TxbTargetPosDeg = txbEleTargetPos,
+                    BtnGo = btnEleGo
                 },
 
-                azCom: "COM8",
-                elCom: "COM9",
+                azCom: aziServoCom,
+                elCom: eleServoCom,
                 azId: 1,
                 elId: 1,
-                defaultRpm: 300
+                defaultRpm: defaultRpm,
+                modbusBaud: modbusBaud
             );
 
 
-            _encReader = new EncoderComReader(this, txbAziPos, txbElePos, "COM3", 115200);
+            _encReader = new EncoderComReader(this, txbAziPos, txbElePos, encoderCom, encoderBaud,
+                aziHomeRawDeg, eleHomeRawDeg, aziHomeDeg, eleHomeDeg);
 
         }
         public MainForm()
         {
             InitializeComponent();
+            btnSetting.Click += btnSetting_Click;
             InitMap();
             // Tọa độ vị trí quan sát
             observerLat = GetDoubleSetting("Latitude", 21.03); // Hà Nội
@@ -265,6 +341,102 @@ namespace SatTracker
             GetSatelliteVisibility();  // Gọi hàm lấy dữ liệu vệ tinh
             GetSatelliteInformation(); // Gọi hàm lấy thông tin vệ tinh
             LoadSatelliteData();  // Gọi hàm load dữ liệu vệ tinh
+        }
+
+        private void btnSetting_Click(object? sender, EventArgs e)
+        {
+            using var settingsForm = new SettingsForm(this);
+            if (settingsForm.ShowDialog(this) != DialogResult.OK) return;
+
+            int defaultRpm = GetIntSetting("DefaultRpm", 300);
+            txbAziSpeed.Text = defaultRpm.ToString(CultureInfo.InvariantCulture);
+            txbEleSpeed.Text = defaultRpm.ToString(CultureInfo.InvariantCulture);
+
+            MessageBox.Show(
+                "Da luu cau hinh. Cac gia tri COM/baud se duoc ap dung khi khoi dong lai ung dung.",
+                "Cau hinh",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        public string CurrentRawAziText => _encReader == null
+            ? "N/A"
+            : _encReader.RawAziDeg.ToString("0.###", CultureInfo.InvariantCulture);
+
+        public string CurrentRawEleText => _encReader == null
+            ? "N/A"
+            : _encReader.RawEleDeg.ToString("0.###", CultureInfo.InvariantCulture);
+
+        public string CurrentSystemAziText => _encReader == null
+            ? txbAziPos.Text
+            : _encReader.AziDeg.ToString("0.###", CultureInfo.InvariantCulture);
+
+        public string CurrentSystemEleText => _encReader == null
+            ? txbElePos.Text
+            : _encReader.EleDeg.ToString("0.###", CultureInfo.InvariantCulture);
+
+        public bool IsEncoderReady(Manual_Control.Axis axis)
+        {
+            if (_encReader == null) return false;
+            return axis == Manual_Control.Axis.Azimuth
+                ? _encReader.IsAziReady
+                : _encReader.IsEleReady;
+        }
+
+        public string GetEncoderStatus(Manual_Control.Axis axis)
+        {
+            if (_encReader == null || !_encReader.IsConnected) return "Encoder not connected";
+            if (!_encReader.HasValidData) return "Encoder no valid data";
+            bool ready = axis == Manual_Control.Axis.Azimuth ? _encReader.IsAziReady : _encReader.IsEleReady;
+            return ready ? "Encoder ready" : "Encoder error";
+        }
+
+        public bool IsServoReady(Manual_Control.Axis axis)
+        {
+            return _manual?.IsAxisEnabled(axis) == true;
+        }
+
+        public string GetServoStatus(Manual_Control.Axis axis)
+        {
+            return _manual?.GetAxisStatus(axis) ?? "Servo not initialized";
+        }
+
+        public void SetAziHomeFromCurrent(float homeDeg)
+        {
+            if (_encReader == null) return;
+            SaveSetting("AziHomeRawDeg", _encReader.RawAziDeg);
+            SaveSetting("AziHomeDeg", homeDeg);
+            ApplyEncoderHomeCalibration();
+        }
+
+        public void SetEleHomeFromCurrent(float homeDeg)
+        {
+            if (_encReader == null) return;
+            SaveSetting("EleHomeRawDeg", _encReader.RawEleDeg);
+            SaveSetting("EleHomeDeg", homeDeg);
+            ApplyEncoderHomeCalibration();
+        }
+
+        public void ApplyEncoderHomeCalibration()
+        {
+            _encReader?.ApplyHomeCalibration(
+                GetFloatSetting("AziHomeRawDeg", 0),
+                GetFloatSetting("EleHomeRawDeg", 0),
+                GetFloatSetting("AziHomeDeg", 0),
+                GetFloatSetting("EleHomeDeg", 0));
+        }
+
+        public void StartSettingsJog(Manual_Control.Axis axis, int direction)
+        {
+            if (!IsServoReady(axis)) return;
+
+            int rpm = Math.Max(1, GetIntSetting("DefaultRpm", 300));
+            _ = _manual?.StartManualMoveAsync(axis, direction >= 0 ? rpm : -rpm);
+        }
+
+        public void StopSettingsJog(Manual_Control.Axis axis)
+        {
+            _ = _manual?.StopManualMoveAsync(axis);
         }
 
         // Hàm để thay đổi đường dẫn file TLE (gọi từ UI hoặc logic khác)
@@ -302,8 +474,34 @@ namespace SatTracker
                 var visibleData = JsonConvert.DeserializeObject<List<SatelliteVisible>>(visibleJson);
                 dataGridViewSatellites.DataSource = null;
                 dataGridViewSatellites.DataSource = visibleData;
+                dataGridViewSatellites.DataBindingComplete += dataGridViewSatellites_DataBindingComplete;
 
                 informationList = JsonConvert.DeserializeObject<List<SatelliteInfo>>(infoJson);
+
+                if (informationList.Count > 0)
+                    {
+                    for (int i = 0; i < informationList.Count; i++)
+                    {
+                        double firstLatitudeAngles = 0;
+                        if (informationList[i].LatitudeAngles != null && informationList[i].LatitudeAngles.Count > 0)
+                        {
+                            firstLatitudeAngles = informationList[i].LatitudeAngles[0];
+                        }
+                        double firstLongtitudeAngles = 0;
+                        if (informationList[i].LongtitudeAngles != null && informationList[i].LongtitudeAngles.Count > 0)
+                        {
+                            firstLongtitudeAngles = informationList[i].LongtitudeAngles[0];
+                        }
+                        string firstName = "";
+                        if (informationList[i].Name != null)
+                        {
+                            firstName = informationList[i].Name;
+                        }
+
+                        AddPoint(firstLatitudeAngles, firstLongtitudeAngles, firstName, Color.Blue, true, sizeInCm: 1);
+                    }
+                }
+
                 /*
                 var infoData = JsonConvert.DeserializeObject<List<SatelliteInfo>>(infoJson);
                 var displayData = new List<SatelliteInfoDisplay>();
@@ -341,7 +539,8 @@ namespace SatTracker
                 }
                 */
                 dataGridInforSatellites.DataSource = null;
-                dataGridInforSatellites.DataSource = informationList;// displayData;
+                dataGridInforSatellites.DataSource = informationList;// displayData;                
+                dataGridInforSatellites.DataBindingComplete += dataGridInforSatellites_DataBindingComplete;
                 //File.AppendAllText("csharp_error.log", $"{DateTime.Now}: Displayed {displayData.Count} rows in DataGridViewInfo\n");
             }
             catch (Exception ex)
@@ -416,23 +615,52 @@ namespace SatTracker
             ZoomToFitAllPoints();
         }
         // Phương thức thêm một điểm đơn lẻ
-        public void AddPoint(double lat, double lng, string title = "", Color? color = null)
+        public void AddPoint(double lat, double lng, string title = "", Color? color = null, bool isSatellite = false, double sizeInCm = 0.5)
         {
             PointLatLng point = new PointLatLng(lat, lng);
-            // Tạo marker với màu tùy chỉnh
-            GMarkerGoogle marker = new GMarkerGoogle(point,
-                color.HasValue ? GetGoogleMarkerType(color.Value) : GMarkerGoogleType.red_pushpin);
-            // Thêm tooltip
+            GMapMarker marker;
+
+            Color finalColor = color.HasValue ? color.Value : Color.Gold;
+
+            if (isSatellite)
+            {
+                marker = new GMapSatelliteMarker(point, sizeInCm, finalColor, defaultZoom: 7);
+            }
+            else
+            {
+                GMarkerGoogleType markerType = color.HasValue ? GetGoogleMarkerType(finalColor) : GMarkerGoogleType.red_big_stop;
+                marker = new GMarkerGoogle(point, markerType);
+            }
+
+            // CẤU HÌNH CHỮ SÁT VỆ TINH, KHÔNG NỀN, CỠ LỚN
             if (!string.IsNullOrEmpty(title))
             {
                 marker.ToolTipText = title;
-                marker.ToolTip.Fill = Brushes.Black;
-                marker.ToolTip.Foreground = Brushes.White;
-                marker.ToolTip.Stroke = Pens.Black;
-                marker.ToolTip.TextPadding = new Size(20, 20);
+
+                // 1. Định dạng font chữ lớn và đậm
+                marker.ToolTip.Font = new Font("Arial", 10, FontStyle.Bold);
+                marker.ToolTip.Foreground = new SolidBrush(finalColor);
+
+                // 2. Xóa bỏ hoàn toàn nền và viền khung
+                marker.ToolTip.Fill = Brushes.Transparent;
+                marker.ToolTip.Stroke = new Pen(Color.Transparent, 0);
+
+                // 3. THU NHỎ PADDING (LỀ CHỮ)
+                // Đặt về mức tối thiểu để chữ gom sát lại, không có khoảng trống thừa xung quanh
+                marker.ToolTip.TextPadding = new Size(2, 2);
+
+                // 4. ĐIỀU CHỈNH OFFSET ĐỂ KÉO CHỮ LẠI GẦN TÂM
+                // Mặc định GMap đẩy chữ lên trên (-20). 
+                // Ta chỉnh lại: X = 10 (lệch phải một chút để không đè lên thân), Y = -5 (sát ngay phía trên cánh vệ tinh)
+                marker.ToolTip.Offset = new Point(10, -5);
+
+                // Luôn luôn hiển thị chữ trên bản đồ
+                marker.ToolTipMode = MarkerTooltipMode.Always;
             }
+
             satOverlay.Markers.Add(marker);
         }
+
         // Phương thức xóa tất cả điểm
         // Phương thức xóa tất cả điểm và đường
         public void ClearAllPoints()
@@ -530,8 +758,8 @@ namespace SatTracker
             }
             if (visibilityList.Count > 0)
             {
+                dataGridViewSatellites.DataBindingComplete += dataGridViewSatellites_DataBindingComplete;
                 dataGridViewSatellites.DataSource = visibilityList;
-                dataGridViewSatellites.DataBindingComplete += dataGridSatellites_DataBindingComplete;
             }
         }
         private void GetSatelliteInformation()
@@ -625,7 +853,7 @@ namespace SatTracker
                             AzimuthAngles = azimuthAngles,
                             ElevationAngles = elevationAngles,
                             LatitudeAngles = latitudeAngles,
-                            LongitudeAngles = longitudeAngles,
+                            LongtitudeAngles = longitudeAngles,
                         });
                     }
                 }
@@ -634,8 +862,8 @@ namespace SatTracker
 
             if (informationList.Count > 0)
             {
+                dataGridInforSatellites.DataBindingComplete += dataGridInforSatellites_DataBindingComplete;
                 dataGridInforSatellites.DataSource = informationList;
-                dataGridInforSatellites.DataBindingComplete += dataGridSatellites_DataBindingComplete;
             }
         }
         private void dataGridInforSatellites_SelectionChanged(object sender, EventArgs e)
@@ -651,7 +879,7 @@ namespace SatTracker
                     {
                         ClearAllLines();
                         DrawLineFromArrays(selectedSatellite.LatitudeAngles,
-                                           selectedSatellite.LongitudeAngles,
+                                           selectedSatellite.LongtitudeAngles,
                                            Color.Red, 3, "");
                         PlotselectedSatellite();
                         DisplaySatelliteAtTimestamp();
@@ -676,9 +904,127 @@ namespace SatTracker
                             currentElevation = selectedSatellite.ElevationAngles[0];
                         */
                         //StartSendingData();
+                        StartAntennaTrajectoryTracking();
                     }
                 }
             }
+        }
+
+        private void StartAntennaTrajectoryTracking()
+        {
+            StopAntennaTrajectoryTracking();
+
+            if (timeStampsSend == null || azimuthAnglesSend == null || elevationAnglesSend == null ||
+                timeStampsSend.Count == 0 ||
+                timeStampsSend.Count != azimuthAnglesSend.Count ||
+                timeStampsSend.Count != elevationAnglesSend.Count)
+            {
+                MessageBox.Show("Dữ liệu quỹ đạo vệ tinh không hợp lệ.", "Tracking",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!IsServoReady(Manual_Control.Axis.Azimuth) || !IsServoReady(Manual_Control.Axis.Elevation))
+            {
+                MessageBox.Show("Cần Connect và Enable cả 2 servo trước khi tracking vệ tinh.", "Tracking",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!IsEncoderReady(Manual_Control.Axis.Azimuth) || !IsEncoderReady(Manual_Control.Axis.Elevation))
+            {
+                MessageBox.Show("Cần Encoder Azimuth/Elevation có dữ liệu hợp lệ trước khi tracking vệ tinh.", "Tracking",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _antennaTrackingTimer = new System.Windows.Forms.Timer
+            {
+                Interval = Math.Max(50, GetIntSetting("TrackingIntervalMs", 200))
+            };
+            _antennaTrackingTimer.Tick += AntennaTrackingTimer_Tick;
+            _antennaTrackingTimer.Start();
+            AntennaTrackingTimer_Tick(_antennaTrackingTimer, EventArgs.Empty);
+        }
+
+        private async void AntennaTrackingTimer_Tick(object? sender, EventArgs e)
+        {
+            if (_antennaTrackingBusy || _manual == null ||
+                timeStampsSend == null || azimuthAnglesSend == null || elevationAnglesSend == null)
+            {
+                return;
+            }
+
+            _antennaTrackingBusy = true;
+            try
+            {
+                DateTime now = DateTime.Now;
+                DateTime endTime = timeStampsSend[^1];
+
+                if (now > endTime)
+                {
+                    StopAntennaTrajectoryTracking();
+                    return;
+                }
+
+                float targetAzi = (float)GetTrajectoryValueAtTime(timeStampsSend, azimuthAnglesSend, now);
+                float targetEle = (float)GetTrajectoryValueAtTime(timeStampsSend, elevationAnglesSend, now);
+
+                float toleranceDeg = Math.Max(0.01f, GetFloatSetting("TrackingToleranceDeg", 0.2f));
+                int minRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30));
+                int maxRpm = Math.Max(minRpm, GetIntSetting("MaxRpm", 2000));
+                float kp = Math.Max(0.1f, GetFloatSetting("PidKp", 20));
+
+                await Task.WhenAll(
+                    _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Azimuth, targetAzi, toleranceDeg, minRpm, maxRpm, kp),
+                    _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg, minRpm, maxRpm, kp));
+            }
+            catch (Exception ex)
+            {
+                StopAntennaTrajectoryTracking();
+                MessageBox.Show($"Loi tracking anten: {ex.Message}", "Tracking",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _antennaTrackingBusy = false;
+            }
+        }
+
+        private void StopAntennaTrajectoryTracking()
+        {
+            if (_antennaTrackingTimer != null)
+            {
+                _antennaTrackingTimer.Stop();
+                _antennaTrackingTimer.Tick -= AntennaTrackingTimer_Tick;
+                _antennaTrackingTimer.Dispose();
+                _antennaTrackingTimer = null;
+            }
+
+            _ = _manual?.StopManualMoveAsync(Manual_Control.Axis.Azimuth);
+            _ = _manual?.StopManualMoveAsync(Manual_Control.Axis.Elevation);
+        }
+
+        private static double GetTrajectoryValueAtTime(List<DateTime> timestamps, List<double> values, DateTime now)
+        {
+            if (timestamps.Count == 0 || values.Count == 0) return 0;
+            if (now <= timestamps[0]) return values[0];
+
+            int last = Math.Min(timestamps.Count, values.Count) - 1;
+            if (now >= timestamps[last]) return values[last];
+
+            for (int i = 1; i <= last; i++)
+            {
+                if (now > timestamps[i]) continue;
+
+                double totalMs = (timestamps[i] - timestamps[i - 1]).TotalMilliseconds;
+                if (totalMs <= 0) return values[i];
+
+                double ratio = (now - timestamps[i - 1]).TotalMilliseconds / totalMs;
+                return values[i - 1] + ((values[i] - values[i - 1]) * ratio);
+            }
+
+            return values[last];
         }
         private void OnInitialTimerElapsed(object sender, ElapsedEventArgs e)
         {
@@ -874,14 +1220,14 @@ namespace SatTracker
         }
         private void DrawSatellitePathOnGMap(SatelliteInfo satellite)
         {
-            if (satellite.LatitudeAngles.Count == 0 || satellite.LongitudeAngles.Count == 0)
+            if (satellite.LatitudeAngles.Count == 0 || satellite.LongtitudeAngles.Count == 0)
             {
                 return;
             }
 
             for (int i = 0; i < satellite.LatitudeAngles.Count; i++)
             {
-                PointLatLng point = new PointLatLng(satellite.LatitudeAngles[i], satellite.LongitudeAngles[i]);
+                PointLatLng point = new PointLatLng(satellite.LatitudeAngles[i], satellite.LongtitudeAngles[i]);
                 // Create a Google marker (you can choose other marker types)
                 GMarkerGoogle marker = new GMarkerGoogle(point, GMarkerGoogleType.red_dot); // You can change the color/type
                 marker.ToolTipText = satellite.Name + " (" + point.Lat.ToString("F6") + ", " + point.Lng.ToString("F6") + ")";
@@ -894,11 +1240,12 @@ namespace SatTracker
         private void SatelliteAtTimestamp(object indexObj)
         {
             int index = (int)indexObj;
-            if (index >= 0 && index < selectedSatellite.LatitudeAngles.Count && index < selectedSatellite.LongitudeAngles.Count)
+            if (index >= 0 && index < selectedSatellite.LatitudeAngles.Count && index < selectedSatellite.LongtitudeAngles.Count)
             {
                 double currentLat = selectedSatellite.LatitudeAngles[index];
-                double currentLong = selectedSatellite.LongitudeAngles[index];
-                AddPoint(currentLat, currentLong, $"{selectedSatellite}\nTime: {selectedSatellite.TrackTimestamps[index].ToString("mm:ss")}\nLat: {currentLat}\nLon: {currentLong}", Color.Blue);
+                double currentLong = selectedSatellite.LongtitudeAngles[index];
+                //AddPoint(currentLat, currentLong, $"{selectedSatellite}\nTime: {selectedSatellite.TrackTimestamps[index].ToString("mm:ss")}\nLat: {currentLat}\nLon: {currentLong}", Color.Blue);
+                AddPoint(selectedSatellite.LatitudeAngles[index], selectedSatellite.LongtitudeAngles[index], selectedSatellite.Name, Color.Blue, true, sizeInCm: 1);
             }
         }
         private void DisplaySatelliteAtTimestamp()
@@ -972,13 +1319,17 @@ namespace SatTracker
                 MarkerType = MarkerType.Circle,
                 MarkerSize = 2
             };
-            for (int i = 0; i < selectedSatellite.LongitudeAngles.Count; i++)
+
+            if (selectedSatellite.LatitudeAngles != null && selectedSatellite.LongtitudeAngles != null)
             {
-                series.Points.Add(new DataPoint(selectedSatellite.LongitudeAngles[i], selectedSatellite.LatitudeAngles[i]));
+                for (int i = 0; i < selectedSatellite.LongtitudeAngles.Count; i++)
+                {
+                    series.Points.Add(new DataPoint(selectedSatellite.LongtitudeAngles[i], selectedSatellite.LatitudeAngles[i]));
+                }
+                plotModel.Series.Add(series);
+                plotModel.InvalidatePlot(true);
+                plotView2.Model = plotModel;
             }
-            plotModel.Series.Add(series);
-            plotModel.InvalidatePlot(true);
-            plotView2.Model = plotModel;
         }
         private void DrawElevationChart(List<DateTime> timestamps, List<double> elevationAngles1, double[] elevationAngles2, string Name = "")
         {
@@ -1092,11 +1443,6 @@ namespace SatTracker
         private void AziRight_Click(object sender, EventArgs e)
         {
             currentAzimuth += azimuthStep;
-        }
-
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
+        } 
     }
 }

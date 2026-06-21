@@ -37,6 +37,7 @@ namespace AntenControl
         private readonly byte _elId;
 
         private readonly int _defaultRpm;
+        private readonly int _modbusBaud;
 
         // ===== Host + manual buttons (shared area) =====
         private readonly Form _host;
@@ -100,7 +101,8 @@ namespace AntenControl
             string elCom = "COM9",
             byte azId = 1,
             byte elId = 1,
-            int defaultRpm = 300
+            int defaultRpm = 300,
+            int modbusBaud = 19200
         )
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
@@ -115,6 +117,7 @@ namespace AntenControl
             _azId = azId;
             _elId = elId;
             _defaultRpm = defaultRpm;
+            _modbusBaud = modbusBaud;
 
             _az = new AxisChannel(Axis.Azimuth, azUi ?? throw new ArgumentNullException(nameof(azUi)), _azCom, _azId);
             _el = new AxisChannel(Axis.Elevation, elUi ?? throw new ArgumentNullException(nameof(elUi)), _elCom, _elId);
@@ -148,6 +151,40 @@ namespace AntenControl
             {
                 SetStatus(ch, $"Read pos error: {ex.Message}");
             }
+        }
+
+        public Task StartManualMoveAsync(Axis axis, int rpmSigned)
+        {
+            return StartMoveAsync(GetCh(axis), rpmSigned);
+        }
+
+        public Task StopManualMoveAsync(Axis axis)
+        {
+            return StopMoveAsync(GetCh(axis));
+        }
+
+        public bool IsAxisConnected(Axis axis)
+        {
+            return GetCh(axis).Connected;
+        }
+
+        public bool IsAxisEnabled(Axis axis)
+        {
+            return GetCh(axis).Connected && GetCh(axis).Enabled;
+        }
+
+        public string GetAxisStatus(Axis axis)
+        {
+            var ch = GetCh(axis);
+            if (!ch.Connected) return "Servo not connected";
+            if (!ch.Enabled) return "Servo connected, not enabled";
+            return ch.Moving ? "Servo moving" : "Servo ready";
+        }
+
+        public Task TrackAxisToTargetAsync(Axis axis, float targetDeg, float toleranceDeg,
+            int minRpm, int maxRpm, float kp, CancellationToken ct = default)
+        {
+            return TrackAxisToTargetAsync(GetCh(axis), targetDeg, toleranceDeg, minRpm, maxRpm, kp, ct);
         }
 
         private void StartSpeedMonitor(AxisChannel ch)
@@ -346,6 +383,47 @@ namespace AntenControl
             ch.IsGoing = false;
         }
 
+        private async Task TrackAxisToTargetAsync(AxisChannel ch, float targetDeg, float toleranceDeg,
+            int minRpm, int maxRpm, float kp, CancellationToken ct)
+        {
+            if (!ch.Connected || !ch.Enabled || ch.Drive == null)
+            {
+                SetStatus(ch, "Please Enable first.");
+                return;
+            }
+
+            if (!TryGetEncoderDeg(ch, out var currentDeg))
+            {
+                SetStatus(ch, "Read encoder error.");
+                return;
+            }
+
+            float errDeg = WrapErrDeg(targetDeg - (float)currentDeg);
+            float absErrDeg = Math.Abs(errDeg);
+
+            if (absErrDeg <= toleranceDeg)
+            {
+                await ch.Drive.SetTargetSpeedRpmAsync(0, ct).ConfigureAwait(true);
+                ch.Moving = false;
+                SetStatus(ch, $"Tracking OK {targetDeg:F2} deg");
+                return;
+            }
+
+            int safeMinRpm = Math.Max(1, minRpm);
+            int safeMaxRpm = Math.Max(safeMinRpm, maxRpm);
+            float safeKp = Math.Max(0.1f, kp);
+
+            int speedRpm = (int)Math.Clamp(safeKp * absErrDeg, safeMinRpm, safeMaxRpm);
+            speedRpm = errDeg >= 0 ? speedRpm : -speedRpm;
+
+            await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
+            await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
+            await ch.Drive.SetTargetSpeedRpmAsync(speedRpm, ct).ConfigureAwait(true);
+
+            ch.Moving = true;
+            SetStatus(ch, $"Tracking {targetDeg:F2} deg, delta={errDeg:F2}, V={speedRpm} RPM");
+        }
+
         // =========================
         // Wiring manual move buttons (press = run, release/leave = stop)
         // =========================
@@ -392,7 +470,7 @@ namespace AntenControl
                 SetStatus(ch, $"Opening {ch.Com} ...");
 
                 // NOTE: nếu baud của Kinco khác thì chỉnh ở đây
-                var port = new ModbusRtuPort(ch.Com, baud: 19200, parity: Parity.None, dataBits: 8, stopBits: StopBits.One);
+                var port = new ModbusRtuPort(ch.Com, baud: _modbusBaud, parity: Parity.None, dataBits: 8, stopBits: StopBits.One);
                 port.Open();
 
                 var client = new ModbusClient(port);
