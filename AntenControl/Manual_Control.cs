@@ -30,6 +30,18 @@ namespace AntenControl
             public Button? BtnGo { get; init; }
         }
 
+        public sealed class MotionParameters
+        {
+            public int DefaultRpm { get; init; } = 300;
+            public int MaxRpm { get; init; } = 2000;
+            public float Acceleration { get; init; } = 100f;
+            public float Deceleration { get; init; } = 100f;
+            public int TrackingMinRpm { get; init; } = 30;
+            public float PidKp { get; init; } = 20f;
+            public float PidKi { get; init; }
+            public float PidKd { get; init; }
+        }
+
         // ===== Config per channel =====
         private readonly string _azCom;
         private readonly string _elCom;
@@ -38,6 +50,7 @@ namespace AntenControl
 
         private readonly int _defaultRpm;
         private readonly int _modbusBaud;
+        private readonly Func<MotionParameters> _motionParametersProvider;
 
         // ===== Host + manual buttons (shared area) =====
         private readonly Form _host;
@@ -69,7 +82,13 @@ namespace AntenControl
             public System.Windows.Forms.Timer? SpeedTimer;
 
             public CancellationTokenSource? GoCts;
+            public CancellationTokenSource? MotionCts;
             public bool IsGoing;
+            public int CommandedRpm;
+            public DateTime? LastSpeedCommandUtc;
+            public float IntegralErrorDegSec;
+            public float LastErrorDeg;
+            public DateTime? LastPidUtc;
 
             public AxisChannel(Axis axis, AxisUi ui, string com, byte slaveId)
             {
@@ -102,7 +121,8 @@ namespace AntenControl
             byte azId = 1,
             byte elId = 1,
             int defaultRpm = 300,
-            int modbusBaud = 19200
+            int modbusBaud = 19200,
+            Func<MotionParameters>? motionParametersProvider = null
         )
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
@@ -118,6 +138,10 @@ namespace AntenControl
             _elId = elId;
             _defaultRpm = defaultRpm;
             _modbusBaud = modbusBaud;
+            _motionParametersProvider = motionParametersProvider ?? (() => new MotionParameters
+            {
+                DefaultRpm = _defaultRpm
+            });
 
             _az = new AxisChannel(Axis.Azimuth, azUi ?? throw new ArgumentNullException(nameof(azUi)), _azCom, _azId);
             _el = new AxisChannel(Axis.Elevation, elUi ?? throw new ArgumentNullException(nameof(elUi)), _elCom, _elId);
@@ -182,9 +206,9 @@ namespace AntenControl
         }
 
         public Task TrackAxisToTargetAsync(Axis axis, float targetDeg, float toleranceDeg,
-            int minRpm, int maxRpm, float kp, CancellationToken ct = default)
+            CancellationToken ct = default)
         {
-            return TrackAxisToTargetAsync(GetCh(axis), targetDeg, toleranceDeg, minRpm, maxRpm, kp, ct);
+            return TrackAxisToTargetAsync(GetCh(axis), targetDeg, toleranceDeg, ct);
         }
 
         private void StartSpeedMonitor(AxisChannel ch)
@@ -315,6 +339,130 @@ namespace AntenControl
             return err;
         }
 
+        private MotionParameters GetMotionParameters()
+        {
+            MotionParameters settings;
+            try
+            {
+                settings = _motionParametersProvider();
+            }
+            catch
+            {
+                settings = new MotionParameters { DefaultRpm = _defaultRpm };
+            }
+
+            return new MotionParameters
+            {
+                DefaultRpm = Math.Max(1, settings.DefaultRpm),
+                MaxRpm = Math.Clamp(settings.MaxRpm, 1, 4100),
+                Acceleration = Math.Max(0f, settings.Acceleration),
+                Deceleration = Math.Max(0f, settings.Deceleration),
+                TrackingMinRpm = Math.Max(1, settings.TrackingMinRpm),
+                PidKp = Math.Max(0f, settings.PidKp),
+                PidKi = Math.Max(0f, settings.PidKi),
+                PidKd = Math.Max(0f, settings.PidKd)
+            };
+        }
+
+        private static int ClampTargetRpm(int rpmSigned, MotionParameters settings)
+        {
+            int maxRpm = Math.Clamp(settings.MaxRpm, 1, 4100);
+            return Math.Clamp(rpmSigned, -maxRpm, maxRpm);
+        }
+
+        private static float GetRampRateRpmPerSec(int currentRpm, int targetRpm, MotionParameters settings)
+        {
+            bool acceleratingSameDirection =
+                currentRpm == 0 ||
+                Math.Sign(currentRpm) == Math.Sign(targetRpm) && Math.Abs(targetRpm) > Math.Abs(currentRpm);
+
+            return acceleratingSameDirection ? settings.Acceleration : settings.Deceleration;
+        }
+
+        private static int ApplyRampLimit(AxisChannel ch, int targetRpm, MotionParameters settings)
+        {
+            targetRpm = ClampTargetRpm(targetRpm, settings);
+            float rate = GetRampRateRpmPerSec(ch.CommandedRpm, targetRpm, settings);
+            if (rate <= 0f) return targetRpm;
+
+            DateTime now = DateTime.UtcNow;
+            double elapsedSec = ch.LastSpeedCommandUtc.HasValue
+                ? Math.Max(0.02, (now - ch.LastSpeedCommandUtc.Value).TotalSeconds)
+                : 0.05;
+
+            int maxDelta = Math.Max(1, (int)Math.Round(rate * elapsedSec));
+            int delta = targetRpm - ch.CommandedRpm;
+            if (Math.Abs(delta) <= maxDelta) return targetRpm;
+            return ch.CommandedRpm + Math.Sign(delta) * maxDelta;
+        }
+
+        private async Task<int> SendSpeedRpmAsync(AxisChannel ch, int targetRpm, MotionParameters settings,
+            bool rampToTarget, CancellationToken ct = default)
+        {
+            targetRpm = ClampTargetRpm(targetRpm, settings);
+
+            do
+            {
+                int nextRpm = ApplyRampLimit(ch, targetRpm, settings);
+                await ch.Drive!.SetTargetSpeedRpmAsync(nextRpm, ct).ConfigureAwait(true);
+                ch.CommandedRpm = nextRpm;
+                ch.LastSpeedCommandUtc = DateTime.UtcNow;
+
+                if (!rampToTarget || nextRpm == targetRpm) return nextRpm;
+                await Task.Delay(50, ct).ConfigureAwait(true);
+            }
+            while (!ct.IsCancellationRequested);
+
+            return ch.CommandedRpm;
+        }
+
+        private void ResetPid(AxisChannel ch)
+        {
+            ch.IntegralErrorDegSec = 0f;
+            ch.LastErrorDeg = 0f;
+            ch.LastPidUtc = null;
+        }
+
+        private int CalculatePidSpeedRpm(AxisChannel ch, float errDeg, MotionParameters settings)
+        {
+            DateTime now = DateTime.UtcNow;
+            float dtSec = ch.LastPidUtc.HasValue
+                ? (float)Math.Max(0.02, (now - ch.LastPidUtc.Value).TotalSeconds)
+                : 0.05f;
+
+            ch.IntegralErrorDegSec = Math.Clamp(
+                ch.IntegralErrorDegSec + errDeg * dtSec,
+                -1000f,
+                1000f);
+
+            float derivativeDegPerSec = ch.LastPidUtc.HasValue
+                ? (errDeg - ch.LastErrorDeg) / dtSec
+                : 0f;
+
+            ch.LastErrorDeg = errDeg;
+            ch.LastPidUtc = now;
+
+            float outputRpm =
+                settings.PidKp * errDeg +
+                settings.PidKi * ch.IntegralErrorDegSec +
+                settings.PidKd * derivativeDegPerSec;
+
+            int maxRpm = Math.Max(1, settings.MaxRpm);
+            int minRpm = Math.Min(Math.Max(1, settings.TrackingMinRpm), maxRpm);
+            int speedRpm = (int)Math.Round(Math.Clamp(outputRpm, -maxRpm, maxRpm));
+
+            if (speedRpm == 0)
+            {
+                speedRpm = errDeg >= 0 ? minRpm : -minRpm;
+            }
+            else if (Math.Abs(speedRpm) < minRpm)
+            {
+                speedRpm = Math.Sign(speedRpm) * minRpm;
+            }
+
+            return ClampTargetRpm(speedRpm, settings);
+        }
+
         private bool TryGetEncoderDeg (AxisChannel ch, out double currentDeg)
         {
             currentDeg = 0;
@@ -332,12 +480,9 @@ namespace AntenControl
             if (ch.Drive == null) return;
 
             const float tolDeg = 0.2f; // sai số mục tiêu cho phép (theo độ)
-            const float slowBandDeg = 5f; // vùng bắt đầu giảm tốc (theo độ)
-            const int minRpm = 30; // tốc độ tối thiểu khi gần đích (theo RPM)
-            const int maxRpm = 2000; // tốc độ tối đa (theo RPM)
-            const float kp = 20f; // hệ số tỉ lệ (theo RPM/độ)
 
             ch.IsGoing = true;
+            ResetPid(ch);
             SetStatus(ch, $"Go to {targetDeg:F2}° ...");
 
             // Đảm bảo động cơ ở Speed mode + Enabled
@@ -358,20 +503,15 @@ namespace AntenControl
                 if (absErrDeg <= tolDeg)
                 {
                     // Đạt mục tiêu
-                    await ch.Drive.SetTargetSpeedRpmAsync(0, ct).ConfigureAwait(true);
+                    await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, ct).ConfigureAwait(true);
+                    ResetPid(ch);
                     SetStatus(ch, "GO completed.");
                     break;
                 }
-                // Tính tốc độ theo P control, có giảm tốc khi gần đích
-                float speedRpmF = kp * absErrDeg;
-                if (absErrDeg < slowBandDeg)
-                    speedRpmF = Math.Max(speedRpmF, minRpm);
 
-                // Giới hạn tốc độ
-                int speedRpm = (int)Math.Clamp(speedRpmF, minRpm, maxRpm);
-                speedRpm = errDeg >= 0 ? speedRpm : -speedRpm;
-
-                await ch.Drive.SetTargetSpeedRpmAsync(speedRpm, ct).ConfigureAwait(true);
+                MotionParameters settings = GetMotionParameters();
+                int speedRpm = CalculatePidSpeedRpm(ch, errDeg, settings);
+                await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
 
                 //Cập nhật trạng thái
                 SetStatus(ch, $"delta={errDeg:F2}°, V={speedRpm} RPM");
@@ -384,7 +524,7 @@ namespace AntenControl
         }
 
         private async Task TrackAxisToTargetAsync(AxisChannel ch, float targetDeg, float toleranceDeg,
-            int minRpm, int maxRpm, float kp, CancellationToken ct)
+            CancellationToken ct)
         {
             if (!ch.Connected || !ch.Enabled || ch.Drive == null)
             {
@@ -403,22 +543,21 @@ namespace AntenControl
 
             if (absErrDeg <= toleranceDeg)
             {
-                await ch.Drive.SetTargetSpeedRpmAsync(0, ct).ConfigureAwait(true);
-                ch.Moving = false;
-                SetStatus(ch, $"Tracking OK {targetDeg:F2} deg");
+                int currentRpm = await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: false, ct).ConfigureAwait(true);
+                ch.Moving = currentRpm != 0;
+                ResetPid(ch);
+                SetStatus(ch, currentRpm == 0
+                    ? $"Tracking OK {targetDeg:F2} deg"
+                    : $"Tracking OK {targetDeg:F2} deg, slowing {currentRpm} RPM");
                 return;
             }
 
-            int safeMinRpm = Math.Max(1, minRpm);
-            int safeMaxRpm = Math.Max(safeMinRpm, maxRpm);
-            float safeKp = Math.Max(0.1f, kp);
-
-            int speedRpm = (int)Math.Clamp(safeKp * absErrDeg, safeMinRpm, safeMaxRpm);
-            speedRpm = errDeg >= 0 ? speedRpm : -speedRpm;
+            MotionParameters settings = GetMotionParameters();
+            int speedRpm = CalculatePidSpeedRpm(ch, errDeg, settings);
 
             await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
             await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
-            await ch.Drive.SetTargetSpeedRpmAsync(speedRpm, ct).ConfigureAwait(true);
+            await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
 
             ch.Moving = true;
             SetStatus(ch, $"Tracking {targetDeg:F2} deg, delta={errDeg:F2}, V={speedRpm} RPM");
@@ -451,13 +590,14 @@ namespace AntenControl
         private int ReadSpeedRpm(AxisChannel ch)
         {
             var s = ch.Ui.TxbSpeedRpm.Text?.Trim();
+            MotionParameters settings = GetMotionParameters();
             if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rpm))
             {
                 rpm = Math.Abs(rpm);
-                if (rpm == 0) rpm = _defaultRpm;
-                return rpm;
+                if (rpm == 0) rpm = settings.DefaultRpm;
+                return Math.Min(rpm, settings.MaxRpm);
             }
-            return _defaultRpm;
+            return Math.Min(settings.DefaultRpm, settings.MaxRpm);
         }
 
         // =========================
@@ -569,10 +709,14 @@ namespace AntenControl
             try
             {
                 SetStatus(ch, "Disabling...");
-                await ch.Drive.SetTargetSpeedRpmAsync(0).ConfigureAwait(true);
+                ch.MotionCts?.Cancel();
+                ch.MotionCts?.Dispose();
+                ch.MotionCts = new CancellationTokenSource();
+                await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, ch.MotionCts.Token).ConfigureAwait(true);
                 await ch.Drive.SetControlWordAsync(6).ConfigureAwait(true); // disable/quick stop
                 ch.Enabled = false;
                 ch.Moving = false;
+                ResetPid(ch);
 
                 // Optional: stop speed monitor timer
                 StopSpeedMonitor(ch);
@@ -614,12 +758,20 @@ namespace AntenControl
             try
             {
                 ch.Moving = true;
+                ch.MotionCts?.Cancel();
+                ch.MotionCts?.Dispose();
+                ch.MotionCts = new CancellationTokenSource();
+                MotionParameters settings = GetMotionParameters();
 
                 await ch.Drive.SetOperationModeAsync(3).ConfigureAwait(true);
-                await ch.Drive.SetTargetSpeedRpmAsync(rpmSigned).ConfigureAwait(true);
                 await ch.Drive.SetControlWordAsync(0x000F).ConfigureAwait(true);
+                await SendSpeedRpmAsync(ch, rpmSigned, settings, rampToTarget: true, ch.MotionCts.Token).ConfigureAwait(true);
 
-                SetStatus(ch, $"Moving {rpmSigned} RPM");
+                SetStatus(ch, $"Moving {ClampTargetRpm(rpmSigned, settings)} RPM");
+            }
+            catch (OperationCanceledException)
+            {
+                // A stop command or a new move command replaced this ramp.
             }
             catch (Exception ex)
             {
@@ -634,7 +786,10 @@ namespace AntenControl
 
             try
             {
-                await ch.Drive.SetTargetSpeedRpmAsync(0).ConfigureAwait(true);
+                ch.MotionCts?.Cancel();
+                ch.MotionCts?.Dispose();
+                ch.MotionCts = new CancellationTokenSource();
+                await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, ch.MotionCts.Token).ConfigureAwait(true);
                 // giữ CW theo trạng thái enable:
                 if (ch.Enabled)
                     await ch.Drive.SetControlWordAsync(0x000F).ConfigureAwait(true);
@@ -642,9 +797,14 @@ namespace AntenControl
                     await ch.Drive.SetControlWordAsync(6).ConfigureAwait(true);
 
                 ch.Moving = false;
+                ResetPid(ch);
 
                 // nếu enable thì hiển thị stopped, nếu chưa enable thì giữ status hiện tại
                 if (ch.Enabled) SetStatus(ch, "Stopped.");
+            }
+            catch (OperationCanceledException)
+            {
+                // A new command replaced this stop ramp.
             }
             catch (Exception ex)
             {

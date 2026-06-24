@@ -95,6 +95,20 @@ namespace SatTracker
             }
             return defaultValue;
         }
+        private Manual_Control.MotionParameters GetMotionParameters()
+        {
+            return new Manual_Control.MotionParameters
+            {
+                DefaultRpm = Math.Max(1, GetIntSetting("DefaultRpm", 300)),
+                MaxRpm = Math.Clamp(GetIntSetting("MaxRpm", 2000), 1, 4100),
+                Acceleration = Math.Max(0f, GetFloatSetting("Acceleration", 100)),
+                Deceleration = Math.Max(0f, GetFloatSetting("Deceleration", 100)),
+                TrackingMinRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30)),
+                PidKp = Math.Max(0f, GetFloatSetting("PidKp", 20)),
+                PidKi = Math.Max(0f, GetFloatSetting("PidKi", 0)),
+                PidKd = Math.Max(0f, GetFloatSetting("PidKd", 0))
+            };
+        }
         private void SaveSetting(string key, object value)
         {
             var str = Convert.ToString(value, CultureInfo.InvariantCulture);
@@ -313,7 +327,8 @@ namespace SatTracker
                 azId: 1,
                 elId: 1,
                 defaultRpm: defaultRpm,
-                modbusBaud: modbusBaud
+                modbusBaud: modbusBaud,
+                motionParametersProvider: GetMotionParameters
             );
 
 
@@ -971,13 +986,10 @@ namespace SatTracker
                 float targetEle = (float)GetTrajectoryValueAtTime(timeStampsSend, elevationAnglesSend, now);
 
                 float toleranceDeg = Math.Max(0.01f, GetFloatSetting("TrackingToleranceDeg", 0.2f));
-                int minRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30));
-                int maxRpm = Math.Max(minRpm, GetIntSetting("MaxRpm", 2000));
-                float kp = Math.Max(0.1f, GetFloatSetting("PidKp", 20));
 
                 await Task.WhenAll(
-                    _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Azimuth, targetAzi, toleranceDeg, minRpm, maxRpm, kp),
-                    _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg, minRpm, maxRpm, kp));
+                    _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Azimuth, targetAzi, toleranceDeg),
+                    _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg));
             }
             catch (Exception ex)
             {
