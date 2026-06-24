@@ -56,6 +56,11 @@ namespace SatTracker
         private System.Windows.Forms.Timer? _antennaTrackingTimer;
         private bool _antennaTrackingBusy;
 
+        private string RuntimeDataPath(string fileName)
+        {
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+        }
+
         private float GetFloatSetting(string name, float defaultValue)
         {
             var strValue = ConfigurationManager.AppSettings[name];
@@ -918,9 +923,9 @@ namespace SatTracker
                         List<string> timeStrings = timeStampsSend.ConvertAll(dt => dt.ToString("HH:mm:ss"));
                         List<float> floatListAzi = azimuthAnglesSend.ConvertAll(x => (float)(int)(x * 1000.0));
                         List<float> floatListEle = elevationAnglesSend.ConvertAll(y => (float)(int)(y * 1000.0));
-                        File.WriteAllLines("timeStrings.txt", timeStrings);
-                        File.WriteAllLines("floatListAzi.txt", floatListAzi.Select(x => x.ToString()));
-                        File.WriteAllLines("floatListEle.txt", floatListEle.Select(x => x.ToString()));
+                        File.WriteAllLines(RuntimeDataPath("timeStrings.txt"), timeStrings);
+                        File.WriteAllLines(RuntimeDataPath("floatListAzi.txt"), floatListAzi.Select(x => x.ToString(CultureInfo.InvariantCulture)));
+                        File.WriteAllLines(RuntimeDataPath("floatListEle.txt"), floatListEle.Select(x => x.ToString(CultureInfo.InvariantCulture)));
                         indexSend = 0; indexRecei = 0;
                         /*
                         if (selectedSatellite.AzimuthAngles.Count > 0 && selectedSatellite.AzimuthAngles != null)
@@ -938,6 +943,13 @@ namespace SatTracker
         private void StartAntennaTrajectoryTracking()
         {
             StopAntennaTrajectoryTracking();
+
+            if (!LoadTrackingTrajectoryFromRuntimeFiles(out var errorMessage))
+            {
+                MessageBox.Show(errorMessage, "Tracking",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             if (timeStampsSend == null || azimuthAnglesSend == null || elevationAnglesSend == null ||
                 timeStampsSend.Count == 0 ||
@@ -970,6 +982,158 @@ namespace SatTracker
             _antennaTrackingTimer.Tick += AntennaTrackingTimer_Tick;
             _antennaTrackingTimer.Start();
             AntennaTrackingTimer_Tick(_antennaTrackingTimer, EventArgs.Empty);
+        }
+
+        private bool LoadTrackingTrajectoryFromRuntimeFiles(out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            string timePath = RuntimeDataPath("timeStrings.txt");
+            string aziPath = RuntimeDataPath("floatListAzi.txt");
+            string elePath = RuntimeDataPath("floatListEle.txt");
+
+            if (!File.Exists(timePath) || !File.Exists(aziPath) || !File.Exists(elePath))
+            {
+                errorMessage =
+                    "Chưa có đủ file dữ liệu tracking. Hãy chọn một vệ tinh trong dataGridInforSatellites trước.";
+                return false;
+            }
+
+            try
+            {
+                string[] timeLines = File.ReadAllLines(timePath)
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .ToArray();
+                string[] aziLines = File.ReadAllLines(aziPath)
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .ToArray();
+                string[] eleLines = File.ReadAllLines(elePath)
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .ToArray();
+
+                if (timeLines.Length == 0 ||
+                    timeLines.Length != aziLines.Length ||
+                    timeLines.Length != eleLines.Length)
+                {
+                    errorMessage = "Dữ liệu tracking trong file không hợp lệ hoặc số dòng không khớp.";
+                    return false;
+                }
+
+                DateTime now = DateTime.Now;
+                List<DateTime> timestamps = BuildTrackingTimestamps(timeLines, now);
+                List<double> aziValues = ParseScaledAngleLines(aziLines);
+                List<double> eleValues = ParseScaledAngleLines(eleLines);
+
+                if (timestamps.Count == 0 ||
+                    timestamps.Count != aziValues.Count ||
+                    timestamps.Count != eleValues.Count)
+                {
+                    errorMessage = "Không đọc được đầy đủ dữ liệu thời gian/góc tracking từ file.";
+                    return false;
+                }
+
+                DateTime startTime = timestamps[0];
+                DateTime endTime = timestamps[^1];
+
+                if (now < startTime)
+                {
+                    errorMessage =
+                        $"Chưa tới thời gian theo dõi. Thời gian bắt đầu: {startTime:yyyy-MM-dd HH:mm:ss}, hiện tại: {now:yyyy-MM-dd HH:mm:ss}.";
+                    return false;
+                }
+
+                if (now > endTime)
+                {
+                    errorMessage =
+                        $"Đã quá thời gian theo dõi. Thời gian kết thúc: {endTime:yyyy-MM-dd HH:mm:ss}, hiện tại: {now:yyyy-MM-dd HH:mm:ss}.";
+                    return false;
+                }
+
+                timeStampsSend = timestamps;
+                azimuthAnglesSend = aziValues;
+                elevationAnglesSend = eleValues;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Không đọc được file dữ liệu tracking: {ex.Message}";
+                return false;
+            }
+        }
+
+        private static List<DateTime> BuildTrackingTimestamps(string[] timeLines, DateTime now)
+        {
+            var candidates = new[]
+            {
+                BuildTrackingTimestampsForDate(timeLines, now.Date.AddDays(-1)),
+                BuildTrackingTimestampsForDate(timeLines, now.Date),
+                BuildTrackingTimestampsForDate(timeLines, now.Date.AddDays(1))
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (candidate.Count > 0 && now >= candidate[0] && now <= candidate[^1])
+                {
+                    return candidate;
+                }
+            }
+
+            return candidates
+                .Where(candidate => candidate.Count > 0)
+                .OrderBy(candidate => GetDistanceToInterval(now, candidate[0], candidate[^1]))
+                .FirstOrDefault() ?? new List<DateTime>();
+        }
+
+        private static List<DateTime> BuildTrackingTimestampsForDate(string[] timeLines, DateTime baseDate)
+        {
+            var result = new List<DateTime>();
+            int dayOffset = 0;
+            TimeSpan? previousTime = null;
+
+            foreach (string line in timeLines)
+            {
+                if (!TimeSpan.TryParseExact(line.Trim(), @"hh\:mm\:ss", CultureInfo.InvariantCulture, out var timeOfDay) &&
+                    !TimeSpan.TryParse(line.Trim(), CultureInfo.InvariantCulture, out timeOfDay))
+                {
+                    throw new FormatException($"Thời gian không hợp lệ: {line}");
+                }
+
+                if (previousTime.HasValue && timeOfDay < previousTime.Value)
+                {
+                    dayOffset++;
+                }
+
+                result.Add(baseDate.AddDays(dayOffset).Add(timeOfDay));
+                previousTime = timeOfDay;
+            }
+
+            return result;
+        }
+
+        private static double GetDistanceToInterval(DateTime value, DateTime start, DateTime end)
+        {
+            if (value < start) return (start - value).TotalSeconds;
+            if (value > end) return (value - end).TotalSeconds;
+            return 0;
+        }
+
+        private static List<double> ParseScaledAngleLines(string[] lines)
+        {
+            var rawValues = new List<double>(lines.Length);
+            foreach (string line in lines)
+            {
+                if (!double.TryParse(line.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                {
+                    throw new FormatException($"Góc không hợp lệ: {line}");
+                }
+
+                rawValues.Add(value);
+            }
+
+            bool valuesAreScaled = rawValues.Any(value => Math.Abs(value) > 360.0);
+            return valuesAreScaled
+                ? rawValues.Select(value => value / 1000.0).ToList()
+                : rawValues;
         }
 
         private async void AntennaTrackingTimer_Tick(object? sender, EventArgs e)
@@ -1221,9 +1385,9 @@ namespace SatTracker
                 List<string> timeStrings = timeStampsSend.ConvertAll(dt => dt.ToString("HH:mm:ss"));
                 List<float> floatListAzi = azimuthAnglesSend.ConvertAll(x => (float)(int)(x * 1000.0));
                 List<float> floatListEle = elevationAnglesSend.ConvertAll(y => (float)(int)(y * 1000.0));
-                File.WriteAllLines("timeStrings.txt", timeStrings);
-                File.WriteAllLines("floatListAzi.txt", floatListAzi.Select(x => x.ToString()));
-                File.WriteAllLines("floatListEle.txt", floatListEle.Select(x => x.ToString()));
+                File.WriteAllLines(RuntimeDataPath("timeStrings.txt"), timeStrings);
+                File.WriteAllLines(RuntimeDataPath("floatListAzi.txt"), floatListAzi.Select(x => x.ToString(CultureInfo.InvariantCulture)));
+                File.WriteAllLines(RuntimeDataPath("floatListEle.txt"), floatListEle.Select(x => x.ToString(CultureInfo.InvariantCulture)));
                 SendStringToUdp(string.Join(",", timeStrings));
                 SendStringToUdp(string.Join(",", floatListAzi));
                 SendStringToUdp(string.Join(",", floatListEle));
