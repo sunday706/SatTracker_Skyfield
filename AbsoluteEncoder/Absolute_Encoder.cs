@@ -31,18 +31,7 @@ namespace SatTracker.AntenControl
         // last time we successfully parsed a full line (E1|E2)
         private DateTime _lastGoodLineUtc = DateTime.MinValue;
 
-        // last time LSB changed (per encoder)
-        private DateTime _lastE1LsbChangeUtc = DateTime.MinValue;
-        private DateTime _lastE2LsbChangeUtc = DateTime.MinValue;
-
-        private int _lastE1Lsb = -1;
-        private int _lastE2Lsb = -1;
-
-        private bool _e1Stuck;
-        private bool _e2Stuck;
-
         private const int NoDataTimeoutMs = 1500;     // mạch treo/không gửi gì
-        private const int LsbStuckTimeoutMs = 1200;   // mất encoder (LSB single-turn không đổi)
 
         public bool IsConnected => _sp != null && _sp.IsOpen;
 
@@ -62,8 +51,8 @@ namespace SatTracker.AntenControl
         public bool HasValidData => IsConnected &&
             _lastGoodLineUtc != DateTime.MinValue &&
             (DateTime.UtcNow - _lastGoodLineUtc).TotalMilliseconds <= NoDataTimeoutMs;
-        public bool IsAziReady => HasValidData && !_e1Stuck && !AziErr;
-        public bool IsEleReady => HasValidData && !_e2Stuck && !EleErr;
+        public bool IsAziReady => HasValidData;
+        public bool IsEleReady => HasValidData;
 
         private float _aziHomeRawDeg;
         private float _eleHomeRawDeg;
@@ -252,46 +241,9 @@ namespace SatTracker.AntenControl
             AziErr = m.Groups["e1err"].Value != "0";
             EleErr = m.Groups["e2err"].Value != "0";
 
-            AziErr = m.Groups["e1err"].Value != "0";
-            EleErr = m.Groups["e2err"].Value != "0";
-
-            // --- NEW: monitor single-turn LSB for each encoder ---
-            if (int.TryParse(m.Groups["e1st"].Value, out int e1st))
-            {
-                int lsb = e1st & 1;
-                if (_lastE1Lsb == -1)
-                {
-                    _lastE1Lsb = lsb;
-                    _lastE1LsbChangeUtc = DateTime.UtcNow; // khởi tạo
-                }
-                else if (lsb != _lastE1Lsb)
-                {
-                    _lastE1Lsb = lsb;
-                    _lastE1LsbChangeUtc = DateTime.UtcNow;
-                    _e1Stuck = false;
-                }
-            }
-
-            if (int.TryParse(m.Groups["e2st"].Value, out int e2st))
-            {
-                int lsb = e2st & 1;
-                if (_lastE2Lsb == -1)
-                {
-                    _lastE2Lsb = lsb;
-                    _lastE2LsbChangeUtc = DateTime.UtcNow;
-                }
-                else if (lsb != _lastE2Lsb)
-                {
-                    _lastE2Lsb = lsb;
-                    _lastE2LsbChangeUtc = DateTime.UtcNow;
-                    _e2Stuck = false;
-                }
-            }
-
             // mark we are alive (received a full valid line)
             _lastGoodLineUtc = DateTime.UtcNow;
 
-            // Update UI respecting stuck state (ERR/NORMAL)
             UpdateUiNow();
 
 
@@ -311,30 +263,20 @@ namespace SatTracker.AntenControl
                 {
                     // báo không đọc được gì
                     UpdateStatus("N/A", "N/A");
-                    _e1Stuck = _e2Stuck = false;
                     return;
                 }
             }
 
-            // Case (2): still receiving lines, but 1 encoder stuck (LSB not changing)
-            // Only evaluate stuck if we have seen at least 1 LSB change time
             if (_lastGoodLineUtc != DateTime.MinValue)
             {
-                if (_lastE1LsbChangeUtc != DateTime.MinValue)
-                    _e1Stuck = (now - _lastE1LsbChangeUtc).TotalMilliseconds > LsbStuckTimeoutMs;
-
-                if (_lastE2LsbChangeUtc != DateTime.MinValue)
-                    _e2Stuck = (now - _lastE2LsbChangeUtc).TotalMilliseconds > LsbStuckTimeoutMs;
-
-                UpdateUiNow(); // refresh textbox according to stuck flags
+                UpdateUiNow();
             }
         }
 
         private void UpdateUiNow()
         {
-            // Nếu encoder kênh nào lỗi -> báo ERR riêng kênh đó
-            string aziText = _e1Stuck ? "ERR" : AziDeg.ToString("0.###", CultureInfo.InvariantCulture);
-            string eleText = _e2Stuck ? "ERR" : EleDeg.ToString("0.###", CultureInfo.InvariantCulture);
+            string aziText = AziDeg.ToString("0.###", CultureInfo.InvariantCulture);
+            string eleText = EleDeg.ToString("0.###", CultureInfo.InvariantCulture);
             UpdateStatus(aziText, eleText);
         }
 
