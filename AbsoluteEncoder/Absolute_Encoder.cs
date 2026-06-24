@@ -93,7 +93,7 @@ namespace SatTracker.AntenControl
             _eleHomeDeg = eleHomeDeg;
 
             AziDeg = NormalizeAzimuthDeg(RawAziDeg - _aziHomeRawDeg + _aziHomeDeg);
-            EleDeg = RawEleDeg - _eleHomeRawDeg + _eleHomeDeg;
+            EleDeg = CalculateElevationDeg(RawEleDeg);
             UpdateUiNow();
         }
 
@@ -101,6 +101,19 @@ namespace SatTracker.AntenControl
         {
             deg %= 360f;
             if (deg < 0f) deg += 360f;
+            return deg;
+        }
+
+        private float CalculateElevationDeg(float rawEleDeg)
+        {
+            float deltaDeg = WrapSignedDeg(rawEleDeg - _eleHomeRawDeg);
+            return Math.Max(0f, _eleHomeDeg - Math.Abs(deltaDeg));
+        }
+
+        private static float WrapSignedDeg(float deg)
+        {
+            while (deg > 180f) deg -= 360f;
+            while (deg < -180f) deg += 360f;
             return deg;
         }
 
@@ -243,7 +256,7 @@ namespace SatTracker.AntenControl
             RawAziDeg = float.Parse(m.Groups["e1ang"].Value, CultureInfo.InvariantCulture);
             RawEleDeg = float.Parse(m.Groups["e2ang"].Value, CultureInfo.InvariantCulture);
             AziDeg = NormalizeAzimuthDeg(RawAziDeg - _aziHomeRawDeg + _aziHomeDeg);
-            EleDeg = RawEleDeg - _eleHomeRawDeg + _eleHomeDeg;
+            EleDeg = CalculateElevationDeg(RawEleDeg);
 
             AziErr = m.Groups["e1err"].Value != "0";
             EleErr = m.Groups["e2err"].Value != "0";
