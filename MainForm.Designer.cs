@@ -194,7 +194,7 @@
             panel5.Location = new Point(0, 35);
             panel5.Margin = new Padding(2);
             panel5.Name = "panel5";
-            panel5.Size = new Size(1309, 591);
+            panel5.Size = new Size(1309, 615);
             panel5.TabIndex = 7;
             // 
             // panel1
@@ -209,7 +209,7 @@
             panel1.Location = new Point(338, 0);
             panel1.Margin = new Padding(2);
             panel1.Name = "panel1";
-            panel1.Size = new Size(971, 591);
+            panel1.Size = new Size(971, 615);
             panel1.TabIndex = 7;
             // 
             // lblSatus
@@ -217,7 +217,7 @@
             lblSatus.AutoSize = true;
             lblSatus.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
             lblSatus.ForeColor = Color.Red;
-            lblSatus.Location = new Point(6, 571);
+            lblSatus.Location = new Point(17, 595);
             lblSatus.Name = "lblSatus";
             lblSatus.Size = new Size(90, 15);
             lblSatus.TabIndex = 3;
@@ -232,7 +232,7 @@
             panel8.Controls.Add(btnAziRight);
             panel8.Controls.Add(btnEleDown);
             panel8.Controls.Add(btnEleUp);
-            panel8.Location = new Point(781, 350);
+            panel8.Location = new Point(781, 372);
             panel8.Margin = new Padding(2);
             panel8.Name = "panel8";
             panel8.Size = new Size(184, 236);
@@ -324,7 +324,7 @@
             pnlAzi.Controls.Add(lblAziPosition);
             pnlAzi.Controls.Add(lblAziSpeed);
             pnlAzi.Controls.Add(lblAzi);
-            pnlAzi.Location = new Point(781, 186);
+            pnlAzi.Location = new Point(781, 197);
             pnlAzi.Name = "pnlAzi";
             pnlAzi.Size = new Size(184, 159);
             pnlAzi.TabIndex = 1;
@@ -464,7 +464,7 @@
             panel9.Controls.Add(label5);
             panel9.Controls.Add(label6);
             panel9.Controls.Add(label7);
-            panel9.Location = new Point(781, 22);
+            panel9.Location = new Point(781, 26);
             panel9.Name = "panel9";
             panel9.Size = new Size(184, 158);
             panel9.TabIndex = 2;
@@ -708,11 +708,11 @@
             // 
             // plotView3
             // 
-            plotView3.Location = new Point(408, -14);
+            plotView3.Location = new Point(387, -14);
             plotView3.Margin = new Padding(2);
             plotView3.Name = "plotView3";
             plotView3.PanCursor = Cursors.Hand;
-            plotView3.Size = new Size(367, 214);
+            plotView3.Size = new Size(388, 227);
             plotView3.TabIndex = 5;
             plotView3.Text = "plotView3";
             plotView3.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -725,7 +725,7 @@
             plotView1.Margin = new Padding(2);
             plotView1.Name = "plotView1";
             plotView1.PanCursor = Cursors.Hand;
-            plotView1.Size = new Size(367, 214);
+            plotView1.Size = new Size(367, 227);
             plotView1.TabIndex = 4;
             plotView1.Text = "plotView1";
             plotView1.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -737,7 +737,7 @@
             splitter1.Location = new Point(335, 0);
             splitter1.Margin = new Padding(2);
             splitter1.Name = "splitter1";
-            splitter1.Size = new Size(3, 591);
+            splitter1.Size = new Size(3, 615);
             splitter1.TabIndex = 6;
             splitter1.TabStop = false;
             // 
@@ -749,7 +749,7 @@
             panel2.Location = new Point(0, 0);
             panel2.Margin = new Padding(2);
             panel2.Name = "panel2";
-            panel2.Size = new Size(335, 591);
+            panel2.Size = new Size(335, 615);
             panel2.TabIndex = 5;
             // 
             // panel4
@@ -759,7 +759,7 @@
             panel4.Location = new Point(0, 0);
             panel4.Margin = new Padding(2);
             panel4.Name = "panel4";
-            panel4.Size = new Size(335, 366);
+            panel4.Size = new Size(335, 390);
             panel4.TabIndex = 10;
             // 
             // dataGridViewSatellites
@@ -779,14 +779,14 @@
             dataGridViewSatellites.Margin = new Padding(2);
             dataGridViewSatellites.Name = "dataGridViewSatellites";
             dataGridViewSatellites.RowHeadersWidth = 72;
-            dataGridViewSatellites.Size = new Size(335, 366);
+            dataGridViewSatellites.Size = new Size(335, 390);
             dataGridViewSatellites.TabIndex = 7;
             // 
             // panel3
             // 
             panel3.Controls.Add(dataGridInforSatellites);
             panel3.Dock = DockStyle.Bottom;
-            panel3.Location = new Point(0, 366);
+            panel3.Location = new Point(0, 390);
             panel3.Margin = new Padding(2);
             panel3.Name = "panel3";
             panel3.Size = new Size(335, 225);
@@ -818,7 +818,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1309, 626);
+            ClientSize = new Size(1309, 650);
             Controls.Add(panel5);
             Controls.Add(toolStrip1);
             Icon = (Icon)resources.GetObject("$this.Icon");

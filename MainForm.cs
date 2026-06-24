@@ -1753,13 +1753,18 @@ namespace SatTracker
         private void DrawElevationChart(List<DateTime> timestamps, List<double> elevationAngles1, double[] elevationAngles2, string Name = "")
         {
             var model = new PlotModel { Title = $"Biểu đồ góc ngẩng vệ tinh {selectedSatellite.Name}" };
+            DateTime startTime = timestamps != null && timestamps.Count > 0 ? timestamps[0] : DateTime.Now;
+            double durationSeconds = timestamps != null && timestamps.Count > 1
+                ? Math.Max(1, (timestamps[^1] - timestamps[0]).TotalSeconds)
+                : 1;
 
-            var timeAxis = new DateTimeAxis
+            var timeAxis = new LinearAxis
             {
                 Position = AxisPosition.Bottom,
-                StringFormat = "mm:ss",
-                Title = "Thời gian",
-                IntervalType = DateTimeIntervalType.Auto,
+                Title = "Thời gian từ lúc bắt đầu",
+                Minimum = 0,
+                Maximum = durationSeconds,
+                LabelFormatter = value => FormatElapsedTime(value),
                 MajorGridlineStyle = LineStyle.Solid,
                 MinorGridlineStyle = LineStyle.Dot
             };
@@ -1788,9 +1793,10 @@ namespace SatTracker
                     MarkerSize = 1,
                     //MarkerStroke = OxyColors.Black
                 };
-                for (int i = 0; i < elevationAngles1.Count; i++)
+                int count = Math.Min(timestamps.Count, elevationAngles1.Count);
+                for (int i = 0; i < count; i++)
                 {
-                    lineSeries1.Points.Add(new DataPoint(DateTimeAxis.ToDouble(timestamps[i]), elevationAngles1[i]));
+                    lineSeries1.Points.Add(new DataPoint(GetElapsedSeconds(startTime, timestamps[i]), elevationAngles1[i]));
                 }
                 model.Series.Add(lineSeries1);
             }
@@ -1805,9 +1811,10 @@ namespace SatTracker
                     MarkerSize = 1,
                     //MarkerStroke = OxyColors.Black
                 };
-                for (int i = 0; i < elevationAngles2.Length; i++)
+                int count = Math.Min(timestamps.Count, elevationAngles2.Length);
+                for (int i = 0; i < count; i++)
                 {
-                    lineSeries2.Points.Add(new DataPoint(DateTimeAxis.ToDouble(timestamps[i]), elevationAngles2[i]));
+                    lineSeries2.Points.Add(new DataPoint(GetElapsedSeconds(startTime, timestamps[i]), elevationAngles2[i]));
                 }
                 model.Series.Add(lineSeries2);
             }
@@ -1817,13 +1824,18 @@ namespace SatTracker
         private void DrawAzimuthChart(List<DateTime> timestamps, List<double> azimuthAngles, string Name = "")
         {
             var model = new PlotModel { Title = $"Biểu đồ góc phương vị vệ tinh {selectedSatellite.Name}" };
+            DateTime startTime = timestamps != null && timestamps.Count > 0 ? timestamps[0] : DateTime.Now;
+            double durationSeconds = timestamps != null && timestamps.Count > 1
+                ? Math.Max(1, (timestamps[^1] - timestamps[0]).TotalSeconds)
+                : 1;
 
-            var timeAxis = new DateTimeAxis
+            var timeAxis = new LinearAxis
             {
                 Position = AxisPosition.Bottom,
-                StringFormat = "mm:ss",
-                Title = "Thời gian",
-                IntervalType = DateTimeIntervalType.Auto,
+                Title = "Thời gian từ lúc bắt đầu",
+                Minimum = 0,
+                Maximum = durationSeconds,
+                LabelFormatter = value => FormatElapsedTime(value),
                 MajorGridlineStyle = LineStyle.Solid,
                 MinorGridlineStyle = LineStyle.Dot
             };
@@ -1855,13 +1867,28 @@ namespace SatTracker
                 int count = Math.Min(timestamps.Count, azimuthAngles.Count);
                 for (int i = 0; i < count; i++)
                 {
-                    lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(timestamps[i]), azimuthAngles[i]));
+                    lineSeries.Points.Add(new DataPoint(GetElapsedSeconds(startTime, timestamps[i]), azimuthAngles[i]));
                 }
 
                 model.Series.Add(lineSeries);
             }
 
             plotView3.Model = model;
+        }
+
+        private static double GetElapsedSeconds(DateTime startTime, DateTime timestamp)
+        {
+            return Math.Max(0, (timestamp - startTime).TotalSeconds);
+        }
+
+        private static string FormatElapsedTime(double seconds)
+        {
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds)) return "00:00";
+
+            var elapsed = TimeSpan.FromSeconds(Math.Max(0, seconds));
+            return elapsed.TotalHours >= 1
+                ? elapsed.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture)
+                : elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
         }
         private void btnFile_Click(object sender, EventArgs e)
         {
