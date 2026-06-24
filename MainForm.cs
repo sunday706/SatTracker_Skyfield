@@ -353,7 +353,9 @@ namespace SatTracker
                 modbusBaud: modbusBaud,
                 motionParametersProvider: GetMotionParameters
             );
+            _manual.StateChanged += UpdateTrackingButtonAvailability;
             _manual.SetUiLocked(_controlMode == ControlMode.Tracking);
+            UpdateTrackingButtonAvailability();
 
 
             _encReader = new EncoderComReader(this, txbAziPos, txbElePos, encoderCom, encoderBaud,
@@ -367,6 +369,7 @@ namespace SatTracker
             btnStop.Click += btnStop_Click;
             btnTraking.Click += btnTraking_Click;
             ApplyControlMode(ControlMode.Manual);
+            SetManualButtonsEnabled(false);
             InitMap();
             // Tọa độ vị trí quan sát
             observerLat = GetDoubleSetting("Latitude", 21.03); // Hà Nội
@@ -429,7 +432,7 @@ namespace SatTracker
             ApplyToolStripMode(trackingMode);
 
             btnStop.Enabled = true;
-            btnTraking.Enabled = !trackingMode;
+            UpdateTrackingButtonAvailability();
             lblSatus.Enabled = true;
 
             if (!trackingMode)
@@ -478,6 +481,27 @@ namespace SatTracker
         private void SetTrackingInfo(string message)
         {
             lblSatus.Text = message;
+        }
+
+        private void UpdateTrackingButtonAvailability()
+        {
+            if (_controlMode == ControlMode.Tracking)
+            {
+                btnTraking.Enabled = false;
+                return;
+            }
+
+            btnTraking.Enabled =
+                IsServoReady(Manual_Control.Axis.Azimuth) &&
+                IsServoReady(Manual_Control.Axis.Elevation);
+        }
+
+        private void SetManualButtonsEnabled(bool enabled)
+        {
+            btnAziLeft.Enabled = enabled;
+            btnAziRight.Enabled = enabled;
+            btnEleUp.Enabled = enabled;
+            btnEleDown.Enabled = enabled;
         }
 
         public string CurrentRawAziText => _encReader == null
@@ -1019,6 +1043,9 @@ namespace SatTracker
                                selectedSatellite.ElevationAngles,
                                elevationAnglesRecei,
                                selectedSatellite.Name);
+            DrawAzimuthChart(selectedSatellite.TrackTimestamps,
+                             selectedSatellite.AzimuthAngles,
+                             selectedSatellite.Name);
 
             timeStampsSend = selectedSatellite.TrackTimestamps;
             azimuthAnglesSend = selectedSatellite.AzimuthAngles;
@@ -1785,6 +1812,56 @@ namespace SatTracker
                 model.Series.Add(lineSeries2);
             }
             plotView1.Model = model;
+        }
+
+        private void DrawAzimuthChart(List<DateTime> timestamps, List<double> azimuthAngles, string Name = "")
+        {
+            var model = new PlotModel { Title = $"Biểu đồ góc phương vị vệ tinh {selectedSatellite.Name}" };
+
+            var timeAxis = new DateTimeAxis
+            {
+                Position = AxisPosition.Bottom,
+                StringFormat = "mm:ss",
+                Title = "Thời gian",
+                IntervalType = DateTimeIntervalType.Auto,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot
+            };
+
+            var azimuthAxis = new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                Title = "Góc phương vị (°)",
+                Minimum = 0,
+                Maximum = 360,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot
+            };
+
+            model.Axes.Add(timeAxis);
+            model.Axes.Add(azimuthAxis);
+
+            if (timestamps != null && azimuthAngles != null && azimuthAngles.Count > 0)
+            {
+                var lineSeries = new LineSeries
+                {
+                    Title = "Góc phương vị",
+                    StrokeThickness = 2,
+                    Color = OxyColors.DarkGreen,
+                    MarkerType = MarkerType.Circle,
+                    MarkerSize = 1
+                };
+
+                int count = Math.Min(timestamps.Count, azimuthAngles.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(timestamps[i]), azimuthAngles[i]));
+                }
+
+                model.Series.Add(lineSeries);
+            }
+
+            plotView3.Model = model;
         }
         private void btnFile_Click(object sender, EventArgs e)
         {

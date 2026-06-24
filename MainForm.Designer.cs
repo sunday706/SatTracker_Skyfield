@@ -30,8 +30,8 @@
         {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             openFileDialog1 = new OpenFileDialog();
             MainTimer = new System.Windows.Forms.Timer(components);
             toolStrip1 = new ToolStrip();
@@ -42,7 +42,9 @@
             btnSetting = new ToolStripButton();
             panel5 = new Panel();
             panel1 = new Panel();
+            lblSatus = new Label();
             panel8 = new Panel();
+            btnTraking = new GlassButton();
             btnStop = new GlassButton();
             btnAziLeft = new GlassButton();
             btnAziRight = new GlassButton();
@@ -92,8 +94,7 @@
             dataGridViewSatellites = new DataGridView();
             panel3 = new Panel();
             dataGridInforSatellites = new DataGridView();
-            btnTraking = new GlassButton();
-            lblSatus = new Label();
+            plotView3 = new OxyPlot.WindowsForms.PlotView();
             toolStrip1.SuspendLayout();
             panel5.SuspendLayout();
             panel1.SuspendLayout();
@@ -211,6 +212,15 @@
             panel1.Size = new Size(971, 591);
             panel1.TabIndex = 7;
             // 
+            // lblSatus
+            // 
+            lblSatus.AutoSize = true;
+            lblSatus.Location = new Point(6, 571);
+            lblSatus.Name = "lblSatus";
+            lblSatus.Size = new Size(89, 15);
+            lblSatus.TabIndex = 3;
+            lblSatus.Text = "System Status...";
+            // 
             // panel8
             // 
             panel8.BackColor = SystemColors.ActiveBorder;
@@ -225,6 +235,17 @@
             panel8.Name = "panel8";
             panel8.Size = new Size(184, 216);
             panel8.TabIndex = 0;
+            // 
+            // btnTraking
+            // 
+            btnTraking.Group = null;
+            btnTraking.Location = new Point(5, 172);
+            btnTraking.Margin = new Padding(2);
+            btnTraking.Name = "btnTraking";
+            btnTraking.Size = new Size(174, 34);
+            btnTraking.TabIndex = 5;
+            btnTraking.Text = "TRACKING";
+            btnTraking.Value = null;
             // 
             // btnStop
             // 
@@ -675,6 +696,7 @@
             // 
             // panel6
             // 
+            panel6.Controls.Add(plotView3);
             panel6.Controls.Add(plotView1);
             panel6.Location = new Point(0, 380);
             panel6.Margin = new Padding(2);
@@ -688,7 +710,7 @@
             plotView1.Margin = new Padding(2);
             plotView1.Name = "plotView1";
             plotView1.PanCursor = Cursors.Hand;
-            plotView1.Size = new Size(542, 171);
+            plotView1.Size = new Size(367, 171);
             plotView1.TabIndex = 4;
             plotView1.Text = "plotView1";
             plotView1.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -728,14 +750,14 @@
             // dataGridViewSatellites
             // 
             dataGridViewSatellites.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle3.BackColor = SystemColors.Control;
-            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle3.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
-            dataGridViewSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Control;
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dataGridViewSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGridViewSatellites.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewSatellites.Dock = DockStyle.Fill;
             dataGridViewSatellites.Location = new Point(0, 0);
@@ -758,14 +780,14 @@
             // dataGridInforSatellites
             // 
             dataGridInforSatellites.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle4.BackColor = SystemColors.Control;
-            dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle4.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
-            dataGridInforSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = SystemColors.Control;
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            dataGridInforSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridInforSatellites.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridInforSatellites.Dock = DockStyle.Fill;
             dataGridInforSatellites.Location = new Point(0, 0);
@@ -777,25 +799,18 @@
             dataGridInforSatellites.TabIndex = 7;
             dataGridInforSatellites.SelectionChanged += dataGridInforSatellites_SelectionChanged;
             // 
-            // btnTraking
+            // plotView3
             // 
-            btnTraking.Group = null;
-            btnTraking.Location = new Point(5, 172);
-            btnTraking.Margin = new Padding(2);
-            btnTraking.Name = "btnTraking";
-            btnTraking.Size = new Size(174, 34);
-            btnTraking.TabIndex = 5;
-            btnTraking.Text = "TRACKING";
-            btnTraking.Value = null;
-            // 
-            // lblSatus
-            // 
-            lblSatus.AutoSize = true;
-            lblSatus.Location = new Point(6, 571);
-            lblSatus.Name = "lblSatus";
-            lblSatus.Size = new Size(89, 15);
-            lblSatus.TabIndex = 3;
-            lblSatus.Text = "System Status...";
+            plotView3.Location = new Point(408, 5);
+            plotView3.Margin = new Padding(2);
+            plotView3.Name = "plotView3";
+            plotView3.PanCursor = Cursors.Hand;
+            plotView3.Size = new Size(367, 171);
+            plotView3.TabIndex = 5;
+            plotView3.Text = "plotView3";
+            plotView3.ZoomHorizontalCursor = Cursors.SizeWE;
+            plotView3.ZoomRectangleCursor = Cursors.SizeNWSE;
+            plotView3.ZoomVerticalCursor = Cursors.SizeNS;
             // 
             // MainForm
             // 
@@ -905,5 +920,6 @@
         private GlassButton btnStop;
         private Label lblSatus;
         private GlassButton btnTraking;
+        private OxyPlot.WindowsForms.PlotView plotView3;
     }
 }

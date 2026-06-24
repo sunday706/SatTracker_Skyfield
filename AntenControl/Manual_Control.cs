@@ -65,6 +65,7 @@ namespace AntenControl
 
         private bool _disposed;
         private bool _uiLocked;
+        public event Action? StateChanged;
 
         private sealed class AxisChannel
         {
@@ -861,6 +862,7 @@ namespace AntenControl
                 {
                     ch.Ui.BtnConnect.Enabled = false;
                     ch.Ui.BtnEnable.Enabled = false;
+                    SetManualButtonsEnabled(ch, false);
                     if (ch.Ui.BtnGo != null) ch.Ui.BtnGo.Enabled = false;
                     if (ch.Ui.TxbTargetPosDeg != null) ch.Ui.TxbTargetPosDeg.Enabled = false;
                     return;
@@ -875,9 +877,26 @@ namespace AntenControl
 
                 // Optional GO
                 bool axisReadyForGo = ch.Connected && ch.Enabled && !ch.Moving && !ch.IsGoing;
+                bool axisReadyForManual = ch.Connected && ch.Enabled;
+                SetManualButtonsEnabled(ch, axisReadyForManual);
                 if (ch.Ui.BtnGo != null) ch.Ui.BtnGo.Enabled = axisReadyForGo;
                 if (ch.Ui.TxbTargetPosDeg != null) ch.Ui.TxbTargetPosDeg.Enabled = ch.Connected && ch.Enabled;
+                StateChanged?.Invoke();
             });
+        }
+
+        private void SetManualButtonsEnabled(AxisChannel ch, bool enabled)
+        {
+            if (ch.Axis == Axis.Azimuth)
+            {
+                _btnAziLeft.Enabled = enabled;
+                _btnAziRight.Enabled = enabled;
+            }
+            else
+            {
+                _btnEleUp.Enabled = enabled;
+                _btnEleDown.Enabled = enabled;
+            }
         }
 
         private void SetStatus(AxisChannel ch, string text)
