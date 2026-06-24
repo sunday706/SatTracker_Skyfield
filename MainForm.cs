@@ -340,6 +340,7 @@ namespace SatTracker
         {
             InitializeComponent();
             btnSetting.Click += btnSetting_Click;
+            btnStop.Click += btnStop_Click;
             InitMap();
             // Tọa độ vị trí quan sát
             observerLat = GetDoubleSetting("Latitude", 21.03); // Hà Nội
@@ -372,6 +373,15 @@ namespace SatTracker
                 "Cau hinh",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+        }
+
+        private async void btnStop_Click(object? sender, EventArgs e)
+        {
+            StopAntennaTrajectoryTracking();
+            if (_manual != null)
+            {
+                await _manual.StopAllMotionAsync();
+            }
         }
 
         public string CurrentRawAziText => _encReader == null

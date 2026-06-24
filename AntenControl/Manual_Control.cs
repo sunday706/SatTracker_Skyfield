@@ -187,6 +187,18 @@ namespace AntenControl
             return StopMoveAsync(GetCh(axis));
         }
 
+        public async Task StopAllMotionAsync()
+        {
+            _az.GoCts?.Cancel();
+            _el.GoCts?.Cancel();
+            _az.MotionCts?.Cancel();
+            _el.MotionCts?.Cancel();
+
+            await Task.WhenAll(
+                StopMoveAsync(_az),
+                StopMoveAsync(_el)).ConfigureAwait(true);
+        }
+
         public bool IsAxisConnected(Axis axis)
         {
             return GetCh(axis).Connected;
@@ -311,6 +323,9 @@ namespace AntenControl
                     }
                     catch (OperationCanceledException)
                     {
+                        ch.IsGoing = false;
+                        ch.Moving = false;
+                        ApplyUiState(ch);
                         SetStatus(ch, "GO canceled.");
                     }
                     catch (Exception ex)
@@ -482,6 +497,7 @@ namespace AntenControl
             const float tolDeg = 0.2f; // sai số mục tiêu cho phép (theo độ)
 
             ch.IsGoing = true;
+            ApplyUiState(ch);
             ResetPid(ch);
             SetStatus(ch, $"Go to {targetDeg:F2}° ...");
 
@@ -521,6 +537,8 @@ namespace AntenControl
             }
 
             ch.IsGoing = false;
+            ch.Moving = false;
+            ApplyUiState(ch);
         }
 
         private async Task TrackAxisToTargetAsync(AxisChannel ch, float targetDeg, float toleranceDeg,
@@ -546,6 +564,7 @@ namespace AntenControl
                 int currentRpm = await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: false, ct).ConfigureAwait(true);
                 ch.Moving = currentRpm != 0;
                 ResetPid(ch);
+                ApplyUiState(ch);
                 SetStatus(ch, currentRpm == 0
                     ? $"Tracking OK {targetDeg:F2} deg"
                     : $"Tracking OK {targetDeg:F2} deg, slowing {currentRpm} RPM");
@@ -560,6 +579,7 @@ namespace AntenControl
             await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
 
             ch.Moving = true;
+            ApplyUiState(ch);
             SetStatus(ch, $"Tracking {targetDeg:F2} deg, delta={errDeg:F2}, V={speedRpm} RPM");
         }
 
@@ -758,6 +778,7 @@ namespace AntenControl
             try
             {
                 ch.Moving = true;
+                ApplyUiState(ch);
                 ch.MotionCts?.Cancel();
                 ch.MotionCts?.Dispose();
                 ch.MotionCts = new CancellationTokenSource();
@@ -776,6 +797,7 @@ namespace AntenControl
             catch (Exception ex)
             {
                 ch.Moving = false;
+                ApplyUiState(ch);
                 SetStatus(ch, $"Move error: {ex.Message}");
             }
         }
@@ -797,7 +819,9 @@ namespace AntenControl
                     await ch.Drive.SetControlWordAsync(6).ConfigureAwait(true);
 
                 ch.Moving = false;
+                ch.IsGoing = false;
                 ResetPid(ch);
+                ApplyUiState(ch);
 
                 // nếu enable thì hiển thị stopped, nếu chưa enable thì giữ status hiện tại
                 if (ch.Enabled) SetStatus(ch, "Stopped.");
@@ -827,7 +851,8 @@ namespace AntenControl
                 ch.Ui.BtnEnable.Text = ch.Enabled ? "Disable" : "Enable";
 
                 // Optional GO
-                if (ch.Ui.BtnGo != null) ch.Ui.BtnGo.Enabled = ch.Connected && ch.Enabled;
+                bool axisReadyForGo = ch.Connected && ch.Enabled && !ch.Moving && !ch.IsGoing;
+                if (ch.Ui.BtnGo != null) ch.Ui.BtnGo.Enabled = axisReadyForGo;
                 if (ch.Ui.TxbTargetPosDeg != null) ch.Ui.TxbTargetPosDeg.Enabled = ch.Connected && ch.Enabled;
             });
         }

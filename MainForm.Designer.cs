@@ -30,8 +30,8 @@
         {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             openFileDialog1 = new OpenFileDialog();
             MainTimer = new System.Windows.Forms.Timer(components);
             toolStrip1 = new ToolStrip();
@@ -81,6 +81,7 @@
             lblAziSpeed = new Label();
             lblAzi = new Label();
             panel8 = new Panel();
+            btnStop = new GlassButton();
             btnAziLeft = new GlassButton();
             btnAziRight = new GlassButton();
             btnEleDown = new GlassButton();
@@ -622,6 +623,7 @@
             // panel8
             // 
             panel8.BackColor = SystemColors.ActiveBorder;
+            panel8.Controls.Add(btnStop);
             panel8.Controls.Add(btnAziLeft);
             panel8.Controls.Add(btnAziRight);
             panel8.Controls.Add(btnEleDown);
@@ -633,10 +635,21 @@
             panel8.Size = new Size(213, 182);
             panel8.TabIndex = 0;
             // 
+            // btnStop
+            // 
+            btnStop.Group = null;
+            btnStop.Location = new Point(76, 63);
+            btnStop.Margin = new Padding(2);
+            btnStop.Name = "btnStop";
+            btnStop.Size = new Size(58, 50);
+            btnStop.TabIndex = 4;
+            btnStop.Text = "STOP";
+            btnStop.Value = null;
+            // 
             // btnAziLeft
             // 
             btnAziLeft.Group = null;
-            btnAziLeft.Location = new Point(13, 66);
+            btnAziLeft.Location = new Point(7, 63);
             btnAziLeft.Margin = new Padding(2);
             btnAziLeft.Name = "btnAziLeft";
             btnAziLeft.Size = new Size(58, 50);
@@ -648,7 +661,7 @@
             // btnAziRight
             // 
             btnAziRight.Group = null;
-            btnAziRight.Location = new Point(136, 66);
+            btnAziRight.Location = new Point(145, 63);
             btnAziRight.Margin = new Padding(2);
             btnAziRight.Name = "btnAziRight";
             btnAziRight.Size = new Size(58, 50);
@@ -660,7 +673,7 @@
             // btnEleDown
             // 
             btnEleDown.Group = null;
-            btnEleDown.Location = new Point(75, 112);
+            btnEleDown.Location = new Point(76, 118);
             btnEleDown.Margin = new Padding(2);
             btnEleDown.Name = "btnEleDown";
             btnEleDown.Size = new Size(58, 50);
@@ -672,7 +685,7 @@
             // btnEleUp
             // 
             btnEleUp.Group = null;
-            btnEleUp.Location = new Point(75, 17);
+            btnEleUp.Location = new Point(76, 8);
             btnEleUp.Margin = new Padding(2);
             btnEleUp.Name = "btnEleUp";
             btnEleUp.Size = new Size(58, 50);
@@ -714,14 +727,14 @@
             // dataGridViewSatellites
             // 
             dataGridViewSatellites.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle1.BackColor = SystemColors.Control;
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dataGridViewSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle3.BackColor = SystemColors.Control;
+            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle3.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
+            dataGridViewSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             dataGridViewSatellites.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewSatellites.Dock = DockStyle.Fill;
             dataGridViewSatellites.Location = new Point(0, 0);
@@ -744,14 +757,14 @@
             // dataGridInforSatellites
             // 
             dataGridInforSatellites.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = SystemColors.Control;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            dataGridInforSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle4.BackColor = SystemColors.Control;
+            dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle4.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+            dataGridInforSatellites.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
             dataGridInforSatellites.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridInforSatellites.Dock = DockStyle.Fill;
             dataGridInforSatellites.Location = new Point(0, 0);
@@ -867,5 +880,6 @@
         private Label lblEleStt;
         private Label lblAziStt;
         private ToolStripButton btnSetting;
+        private GlassButton btnStop;
     }
 }
