@@ -54,7 +54,25 @@ namespace SatTracker
         // Encoder reader for receiving data
         private EncoderComReader? _encReader;
         private System.Windows.Forms.Timer? _antennaTrackingTimer;
+        private System.Windows.Forms.Timer? _pendingTrackingTimer;
         private bool _antennaTrackingBusy;
+        private ControlMode _controlMode = ControlMode.Manual;
+        private DateTime? _pendingTrackingStartTime;
+        private string? _pendingTrackingSatelliteName;
+
+        private enum ControlMode
+        {
+            Manual,
+            Tracking
+        }
+
+        private enum TrackingDataLoadStatus
+        {
+            Ready,
+            Pending,
+            Expired,
+            Invalid
+        }
 
         private string RuntimeDataPath(string fileName)
         {
@@ -277,7 +295,7 @@ namespace SatTracker
         }
         private async void Form1_Load(object sender, EventArgs e)
         {
-            dataGridViewSatellites.DataBindingComplete += dataGridViewSatellites_DataBindingComplete;        
+            dataGridViewSatellites.DataBindingComplete += dataGridViewSatellites_DataBindingComplete;
             dataGridViewSatellites.RowPostPaint += dataGridViewSatellites_RowPostPaint;
             dataGridViewSatellites.RowHeadersVisible = true;
             dataGridViewSatellites.CellFormatting += dataGridViewSatellites_CellFormatting;
@@ -335,6 +353,7 @@ namespace SatTracker
                 modbusBaud: modbusBaud,
                 motionParametersProvider: GetMotionParameters
             );
+            _manual.SetUiLocked(_controlMode == ControlMode.Tracking);
 
 
             _encReader = new EncoderComReader(this, txbAziPos, txbElePos, encoderCom, encoderBaud,
@@ -346,6 +365,9 @@ namespace SatTracker
             InitializeComponent();
             btnSetting.Click += btnSetting_Click;
             btnStop.Click += btnStop_Click;
+            btnManual.Click += btnManual_Click;
+            btnTracking.Click += btnTracking_Click;
+            ApplyControlMode(ControlMode.Manual);
             InitMap();
             // Tọa độ vị trí quan sát
             observerLat = GetDoubleSetting("Latitude", 21.03); // Hà Nội
@@ -382,11 +404,91 @@ namespace SatTracker
 
         private async void btnStop_Click(object? sender, EventArgs e)
         {
+            ClearPendingTracking();
             StopAntennaTrajectoryTracking();
             if (_manual != null)
             {
                 await _manual.StopAllMotionAsync();
             }
+            ApplyControlMode(ControlMode.Manual);
+            SetTrackingInfo("Manual mode. Tracking stopped.");
+        }
+
+        private void btnManual_Click(object? sender, EventArgs e)
+        {
+            ClearPendingTracking();
+            StopAntennaTrajectoryTracking();
+            ApplyControlMode(ControlMode.Manual);
+            SetTrackingInfo("Manual mode.");
+        }
+
+        private void btnTracking_Click(object? sender, EventArgs e)
+        {
+            ApplyControlMode(ControlMode.Tracking);
+            SetTrackingInfo("Tracking mode. Đang kiểm tra dữ liệu vệ tinh...");
+            StartAntennaTrajectoryTracking();
+        }
+
+        private void ApplyControlMode(ControlMode mode)
+        {
+            _controlMode = mode;
+            bool trackingMode = mode == ControlMode.Tracking;
+
+            ApplyControlModeToChildren(this, trackingMode);
+            ApplyToolStripMode(trackingMode);
+
+            btnStop.Enabled = true;
+            btnManual.Enabled = !trackingMode;
+            btnTracking.Enabled = !trackingMode;
+            lblModeControl.Text = trackingMode ? "Tracking" : "Manual";
+            lblInfoTracking.Enabled = true;
+
+            if (!trackingMode)
+            {
+                _manual?.SetUiLocked(false);
+                _manual?.RefreshUiState();
+            }
+            else
+            {
+                _manual?.SetUiLocked(true);
+            }
+        }
+
+        private void ApplyControlModeToChildren(Control parent, bool trackingMode)
+        {
+            foreach (Control child in parent.Controls)
+            {
+                ApplyControlModeToChildren(child, trackingMode);
+
+                if (!IsModeManagedControl(child)) continue;
+                child.Enabled = !trackingMode || ReferenceEquals(child, btnStop);
+            }
+        }
+
+        private bool IsModeManagedControl(Control control)
+        {
+            return control is Button ||
+                   control is TextBox ||
+                   control is NumericUpDown ||
+                   control is ComboBox ||
+                   control is CheckBox ||
+                   control is RadioButton ||
+                   control is DataGridView ||
+                   control is GMap.NET.WindowsForms.GMapControl ||
+                   control is OxyPlot.WindowsForms.PlotView;
+        }
+
+        private void ApplyToolStripMode(bool trackingMode)
+        {
+            foreach (ToolStripItem item in toolStrip1.Items)
+            {
+                item.Enabled = !trackingMode;
+            }
+        }
+
+        private void SetTrackingInfo(string message)
+        {
+            lblInfoTracking.Text = message;
         }
 
         public string CurrentRawAziText => _encReader == null
@@ -458,6 +560,7 @@ namespace SatTracker
 
         public void StartSettingsJog(Manual_Control.Axis axis, int direction)
         {
+            if (_controlMode == ControlMode.Tracking) return;
             if (!IsServoReady(axis)) return;
 
             int rpm = Math.Max(1, GetIntSetting("DefaultRpm", 300));
@@ -509,7 +612,7 @@ namespace SatTracker
                 informationList = JsonConvert.DeserializeObject<List<SatelliteInfo>>(infoJson);
 
                 if (informationList.Count > 0)
-                    {
+                {
                     for (int i = 0; i < informationList.Count; i++)
                     {
                         double firstLatitudeAngles = 0;
@@ -934,7 +1037,14 @@ namespace SatTracker
                             currentElevation = selectedSatellite.ElevationAngles[0];
                         */
                         //StartSendingData();
-                        StartAntennaTrajectoryTracking();
+                        if (_controlMode == ControlMode.Tracking)
+                        {
+                            StartAntennaTrajectoryTracking();
+                        }
+                        else
+                        {
+                            SetTrackingInfo($"Đã chọn vệ tinh '{selectedSatellite.Name}'. Chuyển sang Tracking để theo dõi.");
+                        }
                     }
                 }
             }
@@ -944,10 +1054,25 @@ namespace SatTracker
         {
             StopAntennaTrajectoryTracking();
 
-            if (!LoadTrackingTrajectoryFromRuntimeFiles(out var errorMessage))
+            var loadStatus = LoadTrackingTrajectoryFromRuntimeFiles(
+                out var errorMessage,
+                out var startTime,
+                out var endTime);
+
+            if (loadStatus == TrackingDataLoadStatus.Pending)
             {
-                MessageBox.Show(errorMessage, "Tracking",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                QueuePendingTracking(startTime);
+                return;
+            }
+
+            if (loadStatus != TrackingDataLoadStatus.Ready)
+            {
+                SetTrackingInfo(errorMessage);
+                if (loadStatus == TrackingDataLoadStatus.Invalid || loadStatus == TrackingDataLoadStatus.Expired)
+                {
+                    MessageBox.Show(errorMessage, "Tracking",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
                 return;
             }
 
@@ -956,6 +1081,7 @@ namespace SatTracker
                 timeStampsSend.Count != azimuthAnglesSend.Count ||
                 timeStampsSend.Count != elevationAnglesSend.Count)
             {
+                SetTrackingInfo("Dữ liệu quỹ đạo vệ tinh không hợp lệ.");
                 MessageBox.Show("Dữ liệu quỹ đạo vệ tinh không hợp lệ.", "Tracking",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -963,6 +1089,7 @@ namespace SatTracker
 
             if (!IsServoReady(Manual_Control.Axis.Azimuth) || !IsServoReady(Manual_Control.Axis.Elevation))
             {
+                SetTrackingInfo("Cần Connect và Enable cả 2 servo trước khi tracking vệ tinh.");
                 MessageBox.Show("Cần Connect và Enable cả 2 servo trước khi tracking vệ tinh.", "Tracking",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -970,10 +1097,14 @@ namespace SatTracker
 
             if (!IsEncoderReady(Manual_Control.Axis.Azimuth) || !IsEncoderReady(Manual_Control.Axis.Elevation))
             {
+                SetTrackingInfo("Cần Encoder Azimuth/Elevation có dữ liệu hợp lệ trước khi tracking vệ tinh.");
                 MessageBox.Show("Cần Encoder Azimuth/Elevation có dữ liệu hợp lệ trước khi tracking vệ tinh.", "Tracking",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            ClearPendingTracking();
+            SetTrackingInfo($"Đang tracking từ {startTime:HH:mm:ss} đến {endTime:HH:mm:ss}.");
 
             _antennaTrackingTimer = new System.Windows.Forms.Timer
             {
@@ -984,9 +1115,87 @@ namespace SatTracker
             AntennaTrackingTimer_Tick(_antennaTrackingTimer, EventArgs.Empty);
         }
 
-        private bool LoadTrackingTrajectoryFromRuntimeFiles(out string errorMessage)
+        private void QueuePendingTracking(DateTime startTime)
+        {
+            _pendingTrackingStartTime = startTime;
+            _pendingTrackingSatelliteName = selectedSatellite?.Name;
+
+            _pendingTrackingTimer ??= new System.Windows.Forms.Timer
+            {
+                Interval = 1000
+            };
+            _pendingTrackingTimer.Tick -= PendingTrackingTimer_Tick;
+            _pendingTrackingTimer.Tick += PendingTrackingTimer_Tick;
+            _pendingTrackingTimer.Start();
+
+            UpdatePendingTrackingInfo();
+        }
+
+        private void PendingTrackingTimer_Tick(object? sender, EventArgs e)
+        {
+            if (_controlMode != ControlMode.Tracking)
+            {
+                ClearPendingTracking();
+                return;
+            }
+
+            if (!_pendingTrackingStartTime.HasValue)
+            {
+                ClearPendingTracking();
+                return;
+            }
+
+            if (DateTime.Now >= _pendingTrackingStartTime.Value)
+            {
+                ClearPendingTracking(keepInfo: true);
+                SetTrackingInfo("Đã đến thời gian theo dõi. Đang khởi động tracking...");
+                StartAntennaTrajectoryTracking();
+                return;
+            }
+
+            UpdatePendingTrackingInfo();
+        }
+
+        private void UpdatePendingTrackingInfo()
+        {
+            if (!_pendingTrackingStartTime.HasValue) return;
+
+            TimeSpan wait = _pendingTrackingStartTime.Value - DateTime.Now;
+            if (wait < TimeSpan.Zero) wait = TimeSpan.Zero;
+
+            string satelliteName = string.IsNullOrWhiteSpace(_pendingTrackingSatelliteName)
+                ? "vệ tinh đã chọn"
+                : _pendingTrackingSatelliteName;
+
+            SetTrackingInfo(
+                $"Đã đưa '{satelliteName}' vào hàng chờ. Bắt đầu lúc {_pendingTrackingStartTime.Value:HH:mm:ss}, còn {wait:hh\\:mm\\:ss}.");
+        }
+
+        private void ClearPendingTracking(bool keepInfo = false)
+        {
+            if (_pendingTrackingTimer != null)
+            {
+                _pendingTrackingTimer.Stop();
+                _pendingTrackingTimer.Tick -= PendingTrackingTimer_Tick;
+            }
+
+            _pendingTrackingStartTime = null;
+            _pendingTrackingSatelliteName = null;
+
+            if (!keepInfo && lblInfoTracking != null)
+            {
+                SetTrackingInfo(string.Empty);
+            }
+        }
+
+        private TrackingDataLoadStatus LoadTrackingTrajectoryFromRuntimeFiles(
+            out string errorMessage,
+            out DateTime startTime,
+            out DateTime endTime)
         {
             errorMessage = string.Empty;
+            startTime = DateTime.MinValue;
+            endTime = DateTime.MinValue;
 
             string timePath = RuntimeDataPath("timeStrings.txt");
             string aziPath = RuntimeDataPath("floatListAzi.txt");
@@ -996,7 +1205,7 @@ namespace SatTracker
             {
                 errorMessage =
                     "Chưa có đủ file dữ liệu tracking. Hãy chọn một vệ tinh trong dataGridInforSatellites trước.";
-                return false;
+                return TrackingDataLoadStatus.Invalid;
             }
 
             try
@@ -1016,7 +1225,7 @@ namespace SatTracker
                     timeLines.Length != eleLines.Length)
                 {
                     errorMessage = "Dữ liệu tracking trong file không hợp lệ hoặc số dòng không khớp.";
-                    return false;
+                    return TrackingDataLoadStatus.Invalid;
                 }
 
                 DateTime now = DateTime.Now;
@@ -1029,35 +1238,38 @@ namespace SatTracker
                     timestamps.Count != eleValues.Count)
                 {
                     errorMessage = "Không đọc được đầy đủ dữ liệu thời gian/góc tracking từ file.";
-                    return false;
+                    return TrackingDataLoadStatus.Invalid;
                 }
 
-                DateTime startTime = timestamps[0];
-                DateTime endTime = timestamps[^1];
+                startTime = timestamps[0];
+                endTime = timestamps[^1];
 
                 if (now < startTime)
                 {
                     errorMessage =
                         $"Chưa tới thời gian theo dõi. Thời gian bắt đầu: {startTime:yyyy-MM-dd HH:mm:ss}, hiện tại: {now:yyyy-MM-dd HH:mm:ss}.";
-                    return false;
+                    timeStampsSend = timestamps;
+                    azimuthAnglesSend = aziValues;
+                    elevationAnglesSend = eleValues;
+                    return TrackingDataLoadStatus.Pending;
                 }
 
                 if (now > endTime)
                 {
                     errorMessage =
                         $"Đã quá thời gian theo dõi. Thời gian kết thúc: {endTime:yyyy-MM-dd HH:mm:ss}, hiện tại: {now:yyyy-MM-dd HH:mm:ss}.";
-                    return false;
+                    return TrackingDataLoadStatus.Expired;
                 }
 
                 timeStampsSend = timestamps;
                 azimuthAnglesSend = aziValues;
                 elevationAnglesSend = eleValues;
-                return true;
+                return TrackingDataLoadStatus.Ready;
             }
             catch (Exception ex)
             {
                 errorMessage = $"Không đọc được file dữ liệu tracking: {ex.Message}";
-                return false;
+                return TrackingDataLoadStatus.Invalid;
             }
         }
 
@@ -1153,6 +1365,8 @@ namespace SatTracker
                 if (now > endTime)
                 {
                     StopAntennaTrajectoryTracking();
+                    ApplyControlMode(ControlMode.Manual);
+                    SetTrackingInfo("Tracking completed. Manual mode.");
                     return;
                 }
 
@@ -1629,6 +1843,16 @@ namespace SatTracker
         private void AziRight_Click(object sender, EventArgs e)
         {
             currentAzimuth += azimuthStep;
-        } 
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label10_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

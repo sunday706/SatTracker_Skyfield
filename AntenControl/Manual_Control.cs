@@ -64,6 +64,7 @@ namespace AntenControl
         private readonly AxisChannel _el;
 
         private bool _disposed;
+        private bool _uiLocked;
 
         private sealed class AxisChannel
         {
@@ -215,6 +216,19 @@ namespace AntenControl
             if (!ch.Connected) return "Servo not connected";
             if (!ch.Enabled) return "Servo connected, not enabled";
             return ch.Moving ? "Servo moving" : "Servo ready";
+        }
+
+        public void RefreshUiState()
+        {
+            ApplyUiState(_az);
+            ApplyUiState(_el);
+        }
+
+        public void SetUiLocked(bool locked)
+        {
+            _uiLocked = locked;
+            ApplyUiState(_az);
+            ApplyUiState(_el);
         }
 
         public Task TrackAxisToTargetAsync(Axis axis, float targetDeg, float toleranceDeg,
@@ -843,6 +857,15 @@ namespace AntenControl
         {
             SafeUi(() =>
             {
+                if (_uiLocked)
+                {
+                    ch.Ui.BtnConnect.Enabled = false;
+                    ch.Ui.BtnEnable.Enabled = false;
+                    if (ch.Ui.BtnGo != null) ch.Ui.BtnGo.Enabled = false;
+                    if (ch.Ui.TxbTargetPosDeg != null) ch.Ui.TxbTargetPosDeg.Enabled = false;
+                    return;
+                }
+
                 // Connect button text
                 ch.Ui.BtnConnect.Text = ch.Connected ? "Disconnect" : "Connect";
 
