@@ -85,9 +85,6 @@
             panel11 = new Panel();
             plotView2 = new OxyPlot.WindowsForms.PlotView();
             panel6 = new Panel();
-            btnTracking = new Button();
-            btnManual = new Button();
-            lblModeControl = new Label();
             plotView1 = new OxyPlot.WindowsForms.PlotView();
             splitter1 = new Splitter();
             panel2 = new Panel();
@@ -95,7 +92,8 @@
             dataGridViewSatellites = new DataGridView();
             panel3 = new Panel();
             dataGridInforSatellites = new DataGridView();
-            lblInfoTracking = new Label();
+            btnTraking = new GlassButton();
+            lblSatus = new Label();
             toolStrip1.SuspendLayout();
             panel5.SuspendLayout();
             panel1.SuspendLayout();
@@ -195,11 +193,12 @@
             panel5.Location = new Point(0, 35);
             panel5.Margin = new Padding(2);
             panel5.Name = "panel5";
-            panel5.Size = new Size(1309, 570);
+            panel5.Size = new Size(1309, 591);
             panel5.TabIndex = 7;
             // 
             // panel1
             // 
+            panel1.Controls.Add(lblSatus);
             panel1.Controls.Add(panel8);
             panel1.Controls.Add(pnlAzi);
             panel1.Controls.Add(panel9);
@@ -209,21 +208,22 @@
             panel1.Location = new Point(338, 0);
             panel1.Margin = new Padding(2);
             panel1.Name = "panel1";
-            panel1.Size = new Size(971, 570);
+            panel1.Size = new Size(971, 591);
             panel1.TabIndex = 7;
             // 
             // panel8
             // 
             panel8.BackColor = SystemColors.ActiveBorder;
+            panel8.Controls.Add(btnTraking);
             panel8.Controls.Add(btnStop);
             panel8.Controls.Add(btnAziLeft);
             panel8.Controls.Add(btnAziRight);
             panel8.Controls.Add(btnEleDown);
             panel8.Controls.Add(btnEleUp);
-            panel8.Location = new Point(781, 384);
+            panel8.Location = new Point(781, 350);
             panel8.Margin = new Padding(2);
             panel8.Name = "panel8";
-            panel8.Size = new Size(184, 182);
+            panel8.Size = new Size(184, 216);
             panel8.TabIndex = 0;
             // 
             // btnStop
@@ -301,15 +301,15 @@
             pnlAzi.Controls.Add(lblAziPosition);
             pnlAzi.Controls.Add(lblAziSpeed);
             pnlAzi.Controls.Add(lblAzi);
-            pnlAzi.Location = new Point(781, 202);
+            pnlAzi.Location = new Point(781, 186);
             pnlAzi.Name = "pnlAzi";
-            pnlAzi.Size = new Size(184, 179);
+            pnlAzi.Size = new Size(184, 159);
             pnlAzi.TabIndex = 1;
             // 
             // lblAziStt
             // 
             lblAziStt.AutoSize = true;
-            lblAziStt.Location = new Point(5, 126);
+            lblAziStt.Location = new Point(5, 110);
             lblAziStt.Name = "lblAziStt";
             lblAziStt.Size = new Size(96, 15);
             lblAziStt.TabIndex = 12;
@@ -317,16 +317,16 @@
             // 
             // btnAziGo
             // 
-            btnAziGo.Location = new Point(127, 98);
+            btnAziGo.Location = new Point(127, 84);
             btnAziGo.Name = "btnAziGo";
-            btnAziGo.Size = new Size(32, 25);
+            btnAziGo.Size = new Size(51, 25);
             btnAziGo.TabIndex = 11;
             btnAziGo.Text = "GO";
             btnAziGo.UseVisualStyleBackColor = true;
             // 
             // txbAziTargetPos
             // 
-            txbAziTargetPos.Location = new Point(65, 99);
+            txbAziTargetPos.Location = new Point(67, 85);
             txbAziTargetPos.Name = "txbAziTargetPos";
             txbAziTargetPos.Size = new Size(62, 23);
             txbAziTargetPos.TabIndex = 10;
@@ -335,7 +335,7 @@
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new Point(3, 103);
+            label8.Location = new Point(3, 89);
             label8.Name = "label8";
             label8.Size = new Size(65, 15);
             label8.TabIndex = 9;
@@ -344,7 +344,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(129, 70);
+            label2.Location = new Point(136, 63);
             label2.Name = "label2";
             label2.Size = new Size(29, 15);
             label2.TabIndex = 8;
@@ -353,7 +353,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(127, 37);
+            label1.Location = new Point(134, 37);
             label1.Name = "label1";
             label1.Size = new Size(32, 15);
             label1.TabIndex = 7;
@@ -362,7 +362,7 @@
             // txbAziPos
             // 
             txbAziPos.Enabled = false;
-            txbAziPos.Location = new Point(65, 66);
+            txbAziPos.Location = new Point(67, 59);
             txbAziPos.Name = "txbAziPos";
             txbAziPos.ReadOnly = true;
             txbAziPos.Size = new Size(62, 23);
@@ -371,7 +371,7 @@
             // 
             // txbAziSpeed
             // 
-            txbAziSpeed.Location = new Point(65, 33);
+            txbAziSpeed.Location = new Point(67, 33);
             txbAziSpeed.Name = "txbAziSpeed";
             txbAziSpeed.ReadOnly = true;
             txbAziSpeed.Size = new Size(62, 23);
@@ -381,7 +381,7 @@
             // btnAziEnable
             // 
             btnAziEnable.Enabled = false;
-            btnAziEnable.Location = new Point(82, 146);
+            btnAziEnable.Location = new Point(103, 130);
             btnAziEnable.Name = "btnAziEnable";
             btnAziEnable.Size = new Size(75, 23);
             btnAziEnable.TabIndex = 4;
@@ -390,7 +390,7 @@
             // 
             // btnAziConnect
             // 
-            btnAziConnect.Location = new Point(5, 146);
+            btnAziConnect.Location = new Point(5, 130);
             btnAziConnect.Name = "btnAziConnect";
             btnAziConnect.Size = new Size(75, 23);
             btnAziConnect.TabIndex = 3;
@@ -400,7 +400,7 @@
             // lblAziPosition
             // 
             lblAziPosition.AutoSize = true;
-            lblAziPosition.Location = new Point(3, 70);
+            lblAziPosition.Location = new Point(3, 63);
             lblAziPosition.Name = "lblAziPosition";
             lblAziPosition.Size = new Size(53, 15);
             lblAziPosition.TabIndex = 2;
@@ -419,7 +419,7 @@
             // 
             lblAzi.AutoSize = true;
             lblAzi.Font = new Font("Segoe UI", 12F);
-            lblAzi.Location = new Point(52, 4);
+            lblAzi.Location = new Point(64, 4);
             lblAzi.Name = "lblAzi";
             lblAzi.Size = new Size(68, 21);
             lblAzi.TabIndex = 0;
@@ -443,13 +443,13 @@
             panel9.Controls.Add(label7);
             panel9.Location = new Point(781, 22);
             panel9.Name = "panel9";
-            panel9.Size = new Size(184, 178);
+            panel9.Size = new Size(184, 158);
             panel9.TabIndex = 2;
             // 
             // lblEleStt
             // 
             lblEleStt.AutoSize = true;
-            lblEleStt.Location = new Point(5, 126);
+            lblEleStt.Location = new Point(5, 113);
             lblEleStt.Name = "lblEleStt";
             lblEleStt.Size = new Size(99, 15);
             lblEleStt.TabIndex = 15;
@@ -457,16 +457,16 @@
             // 
             // btnEleGo
             // 
-            btnEleGo.Location = new Point(127, 98);
+            btnEleGo.Location = new Point(127, 84);
             btnEleGo.Name = "btnEleGo";
-            btnEleGo.Size = new Size(32, 25);
+            btnEleGo.Size = new Size(51, 25);
             btnEleGo.TabIndex = 14;
             btnEleGo.Text = "GO";
             btnEleGo.UseVisualStyleBackColor = true;
             // 
             // txbEleTargetPos
             // 
-            txbEleTargetPos.Location = new Point(65, 99);
+            txbEleTargetPos.Location = new Point(67, 85);
             txbEleTargetPos.Name = "txbEleTargetPos";
             txbEleTargetPos.Size = new Size(62, 23);
             txbEleTargetPos.TabIndex = 13;
@@ -475,7 +475,7 @@
             // label9
             // 
             label9.AutoSize = true;
-            label9.Location = new Point(3, 103);
+            label9.Location = new Point(3, 89);
             label9.Name = "label9";
             label9.Size = new Size(65, 15);
             label9.TabIndex = 12;
@@ -484,7 +484,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(127, 70);
+            label3.Location = new Point(132, 63);
             label3.Name = "label3";
             label3.Size = new Size(29, 15);
             label3.TabIndex = 8;
@@ -493,7 +493,7 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(127, 37);
+            label4.Location = new Point(132, 37);
             label4.Name = "label4";
             label4.Size = new Size(32, 15);
             label4.TabIndex = 7;
@@ -502,7 +502,7 @@
             // txbElePos
             // 
             txbElePos.Enabled = false;
-            txbElePos.Location = new Point(65, 66);
+            txbElePos.Location = new Point(67, 59);
             txbElePos.Name = "txbElePos";
             txbElePos.ReadOnly = true;
             txbElePos.Size = new Size(62, 23);
@@ -511,7 +511,7 @@
             // 
             // txbEleSpeed
             // 
-            txbEleSpeed.Location = new Point(65, 33);
+            txbEleSpeed.Location = new Point(67, 33);
             txbEleSpeed.Name = "txbEleSpeed";
             txbEleSpeed.ReadOnly = true;
             txbEleSpeed.Size = new Size(62, 23);
@@ -521,7 +521,7 @@
             // btnEleEnable
             // 
             btnEleEnable.Enabled = false;
-            btnEleEnable.Location = new Point(82, 146);
+            btnEleEnable.Location = new Point(103, 130);
             btnEleEnable.Name = "btnEleEnable";
             btnEleEnable.Size = new Size(75, 23);
             btnEleEnable.TabIndex = 4;
@@ -530,7 +530,7 @@
             // 
             // btnEleConnect
             // 
-            btnEleConnect.Location = new Point(5, 146);
+            btnEleConnect.Location = new Point(5, 130);
             btnEleConnect.Name = "btnEleConnect";
             btnEleConnect.Size = new Size(75, 23);
             btnEleConnect.TabIndex = 3;
@@ -540,7 +540,7 @@
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new Point(3, 70);
+            label5.Location = new Point(3, 63);
             label5.Name = "label5";
             label5.Size = new Size(53, 15);
             label5.TabIndex = 2;
@@ -559,7 +559,7 @@
             // 
             label7.AutoSize = true;
             label7.Font = new Font("Segoe UI", 12F);
-            label7.Location = new Point(50, 4);
+            label7.Location = new Point(62, 4);
             label7.Name = "label7";
             label7.Size = new Size(73, 21);
             label7.TabIndex = 0;
@@ -675,45 +675,12 @@
             // 
             // panel6
             // 
-            panel6.Controls.Add(lblInfoTracking);
-            panel6.Controls.Add(btnTracking);
-            panel6.Controls.Add(btnManual);
-            panel6.Controls.Add(lblModeControl);
             panel6.Controls.Add(plotView1);
             panel6.Location = new Point(0, 380);
             panel6.Margin = new Padding(2);
             panel6.Name = "panel6";
-            panel6.Size = new Size(777, 190);
+            panel6.Size = new Size(777, 186);
             panel6.TabIndex = 0;
-            // 
-            // btnTracking
-            // 
-            btnTracking.Location = new Point(670, 84);
-            btnTracking.Name = "btnTracking";
-            btnTracking.Size = new Size(105, 49);
-            btnTracking.TabIndex = 7;
-            btnTracking.Text = "Tracking";
-            btnTracking.UseVisualStyleBackColor = true;
-            btnTracking.Click += button1_Click;
-            // 
-            // btnManual
-            // 
-            btnManual.Location = new Point(670, 29);
-            btnManual.Name = "btnManual";
-            btnManual.Size = new Size(105, 49);
-            btnManual.TabIndex = 6;
-            btnManual.Text = "Manual";
-            btnManual.UseVisualStyleBackColor = true;
-            // 
-            // lblModeControl
-            // 
-            lblModeControl.AutoSize = true;
-            lblModeControl.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblModeControl.Location = new Point(669, 5);
-            lblModeControl.Name = "lblModeControl";
-            lblModeControl.Size = new Size(106, 21);
-            lblModeControl.TabIndex = 5;
-            lblModeControl.Text = "Mode Control";
             // 
             // plotView1
             // 
@@ -721,7 +688,7 @@
             plotView1.Margin = new Padding(2);
             plotView1.Name = "plotView1";
             plotView1.PanCursor = Cursors.Hand;
-            plotView1.Size = new Size(412, 181);
+            plotView1.Size = new Size(542, 171);
             plotView1.TabIndex = 4;
             plotView1.Text = "plotView1";
             plotView1.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -733,7 +700,7 @@
             splitter1.Location = new Point(335, 0);
             splitter1.Margin = new Padding(2);
             splitter1.Name = "splitter1";
-            splitter1.Size = new Size(3, 570);
+            splitter1.Size = new Size(3, 591);
             splitter1.TabIndex = 6;
             splitter1.TabStop = false;
             // 
@@ -745,7 +712,7 @@
             panel2.Location = new Point(0, 0);
             panel2.Margin = new Padding(2);
             panel2.Name = "panel2";
-            panel2.Size = new Size(335, 570);
+            panel2.Size = new Size(335, 591);
             panel2.TabIndex = 5;
             // 
             // panel4
@@ -755,7 +722,7 @@
             panel4.Location = new Point(0, 0);
             panel4.Margin = new Padding(2);
             panel4.Name = "panel4";
-            panel4.Size = new Size(335, 345);
+            panel4.Size = new Size(335, 366);
             panel4.TabIndex = 10;
             // 
             // dataGridViewSatellites
@@ -775,14 +742,14 @@
             dataGridViewSatellites.Margin = new Padding(2);
             dataGridViewSatellites.Name = "dataGridViewSatellites";
             dataGridViewSatellites.RowHeadersWidth = 72;
-            dataGridViewSatellites.Size = new Size(335, 345);
+            dataGridViewSatellites.Size = new Size(335, 366);
             dataGridViewSatellites.TabIndex = 7;
             // 
             // panel3
             // 
             panel3.Controls.Add(dataGridInforSatellites);
             panel3.Dock = DockStyle.Bottom;
-            panel3.Location = new Point(0, 345);
+            panel3.Location = new Point(0, 366);
             panel3.Margin = new Padding(2);
             panel3.Name = "panel3";
             panel3.Size = new Size(335, 225);
@@ -810,22 +777,31 @@
             dataGridInforSatellites.TabIndex = 7;
             dataGridInforSatellites.SelectionChanged += dataGridInforSatellites_SelectionChanged;
             // 
-            // lblInfoTracking
+            // btnTraking
             // 
-            lblInfoTracking.AutoSize = true;
-            lblInfoTracking.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblInfoTracking.Location = new Point(423, 165);
-            lblInfoTracking.Name = "lblInfoTracking";
-            lblInfoTracking.Size = new Size(116, 21);
-            lblInfoTracking.TabIndex = 8;
-            lblInfoTracking.Text = "Traking Status...";
-            lblInfoTracking.Click += label10_Click;
+            btnTraking.Group = null;
+            btnTraking.Location = new Point(5, 172);
+            btnTraking.Margin = new Padding(2);
+            btnTraking.Name = "btnTraking";
+            btnTraking.Size = new Size(174, 34);
+            btnTraking.TabIndex = 5;
+            btnTraking.Text = "TRACKING";
+            btnTraking.Value = null;
+            // 
+            // lblSatus
+            // 
+            lblSatus.AutoSize = true;
+            lblSatus.Location = new Point(6, 571);
+            lblSatus.Name = "lblSatus";
+            lblSatus.Size = new Size(89, 15);
+            lblSatus.TabIndex = 3;
+            lblSatus.Text = "System Status...";
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1309, 605);
+            ClientSize = new Size(1309, 626);
             Controls.Add(panel5);
             Controls.Add(toolStrip1);
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -839,6 +815,7 @@
             toolStrip1.PerformLayout();
             panel5.ResumeLayout(false);
             panel1.ResumeLayout(false);
+            panel1.PerformLayout();
             panel8.ResumeLayout(false);
             pnlAzi.ResumeLayout(false);
             pnlAzi.PerformLayout();
@@ -851,7 +828,6 @@
             tabPage2.ResumeLayout(false);
             panel11.ResumeLayout(false);
             panel6.ResumeLayout(false);
-            panel6.PerformLayout();
             panel2.ResumeLayout(false);
             panel4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridViewSatellites).EndInit();
@@ -927,9 +903,7 @@
         private Label lblAziStt;
         private ToolStripButton btnSetting;
         private GlassButton btnStop;
-        private Label lblModeControl;
-        private Button btnTracking;
-        private Button btnManual;
-        private Label lblInfoTracking;
+        private Label lblSatus;
+        private GlassButton btnTraking;
     }
 }
