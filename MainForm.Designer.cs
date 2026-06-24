@@ -87,6 +87,7 @@
             panel11 = new Panel();
             plotView2 = new OxyPlot.WindowsForms.PlotView();
             panel6 = new Panel();
+            plotView3 = new OxyPlot.WindowsForms.PlotView();
             plotView1 = new OxyPlot.WindowsForms.PlotView();
             splitter1 = new Splitter();
             panel2 = new Panel();
@@ -94,7 +95,6 @@
             dataGridViewSatellites = new DataGridView();
             panel3 = new Panel();
             dataGridInforSatellites = new DataGridView();
-            plotView3 = new OxyPlot.WindowsForms.PlotView();
             toolStrip1.SuspendLayout();
             panel5.SuspendLayout();
             panel1.SuspendLayout();
@@ -215,9 +215,11 @@
             // lblSatus
             // 
             lblSatus.AutoSize = true;
+            lblSatus.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
+            lblSatus.ForeColor = Color.Red;
             lblSatus.Location = new Point(6, 571);
             lblSatus.Name = "lblSatus";
-            lblSatus.Size = new Size(89, 15);
+            lblSatus.Size = new Size(90, 15);
             lblSatus.TabIndex = 3;
             lblSatus.Text = "System Status...";
             // 
@@ -233,7 +235,7 @@
             panel8.Location = new Point(781, 350);
             panel8.Margin = new Padding(2);
             panel8.Name = "panel8";
-            panel8.Size = new Size(184, 216);
+            panel8.Size = new Size(184, 236);
             panel8.TabIndex = 0;
             // 
             // btnTraking
@@ -704,13 +706,26 @@
             panel6.Size = new Size(777, 186);
             panel6.TabIndex = 0;
             // 
+            // plotView3
+            // 
+            plotView3.Location = new Point(408, -14);
+            plotView3.Margin = new Padding(2);
+            plotView3.Name = "plotView3";
+            plotView3.PanCursor = Cursors.Hand;
+            plotView3.Size = new Size(367, 214);
+            plotView3.TabIndex = 5;
+            plotView3.Text = "plotView3";
+            plotView3.ZoomHorizontalCursor = Cursors.SizeWE;
+            plotView3.ZoomRectangleCursor = Cursors.SizeNWSE;
+            plotView3.ZoomVerticalCursor = Cursors.SizeNS;
+            // 
             // plotView1
             // 
-            plotView1.Location = new Point(6, 5);
+            plotView1.Location = new Point(6, -14);
             plotView1.Margin = new Padding(2);
             plotView1.Name = "plotView1";
             plotView1.PanCursor = Cursors.Hand;
-            plotView1.Size = new Size(367, 171);
+            plotView1.Size = new Size(367, 214);
             plotView1.TabIndex = 4;
             plotView1.Text = "plotView1";
             plotView1.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -798,19 +813,6 @@
             dataGridInforSatellites.Size = new Size(335, 225);
             dataGridInforSatellites.TabIndex = 7;
             dataGridInforSatellites.SelectionChanged += dataGridInforSatellites_SelectionChanged;
-            // 
-            // plotView3
-            // 
-            plotView3.Location = new Point(408, 5);
-            plotView3.Margin = new Padding(2);
-            plotView3.Name = "plotView3";
-            plotView3.PanCursor = Cursors.Hand;
-            plotView3.Size = new Size(367, 171);
-            plotView3.TabIndex = 5;
-            plotView3.Text = "plotView3";
-            plotView3.ZoomHorizontalCursor = Cursors.SizeWE;
-            plotView3.ZoomRectangleCursor = Cursors.SizeNWSE;
-            plotView3.ZoomVerticalCursor = Cursors.SizeNS;
             // 
             // MainForm
             // 

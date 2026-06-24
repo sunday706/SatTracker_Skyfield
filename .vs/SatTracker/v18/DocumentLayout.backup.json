@@ -3,24 +3,24 @@
   "WorkspaceRootPath": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\absoluteencoder\\absolute_encoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:absoluteencoder\\absolute_encoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\absoluteencoder\\absolute_encoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:absoluteencoder\\absolute_encoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\kincoservo\\kincoservodrive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -50,7 +50,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -86,14 +86,15 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "MainForm.cs [Design]",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs",
               "RelativeDocumentMoniker": "MainForm.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs [Design]",
-              "RelativeToolTip": "MainForm.cs [Design]",
+              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs [Design]*",
+              "RelativeToolTip": "MainForm.cs [Design]*",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-14T08:38:48.02Z"
+              "WhenOpened": "2025-12-14T08:38:48.02Z",
+              "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
@@ -101,11 +102,12 @@
               "Title": "MainForm.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs",
               "RelativeDocumentMoniker": "MainForm.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs",
-              "RelativeToolTip": "MainForm.cs",
-              "ViewState": "AgIAAKwDAAAAAAAAAAAqwKoDAAANAAAAAAAAAA==",
+              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs*",
+              "RelativeToolTip": "MainForm.cs*",
+              "ViewState": "AgIAAHQHAAAAAAAAAAAqwIMHAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-12T20:07:43.36Z"
+              "WhenOpened": "2025-12-12T20:07:43.36Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -121,7 +123,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "Absolute_Encoder.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\AbsoluteEncoder\\Absolute_Encoder.cs",
               "RelativeDocumentMoniker": "AbsoluteEncoder\\Absolute_Encoder.cs",
@@ -129,23 +131,23 @@
               "RelativeToolTip": "AbsoluteEncoder\\Absolute_Encoder.cs",
               "ViewState": "AgIAAJMAAAAAAAAAAAAAwEQAAAAgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-13T11:20:27.87Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-13T11:20:27.87Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SettingsForm.cs [Design]",
+              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
+              "RelativeDocumentMoniker": "SettingsForm.cs",
+              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs [Design]",
+              "RelativeToolTip": "SettingsForm.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-21T15:17:51.363Z",
+              "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 4,
-              "Title": "SettingsForm.cs [Design]",
-              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
-              "RelativeDocumentMoniker": "SettingsForm.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\V2\\SatTracker_Skyfield\\SettingsForm.cs [Design]",
-              "RelativeToolTip": "..\\V2\\SatTracker_Skyfield\\SettingsForm.cs [Design]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-21T15:17:51.363Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
               "Title": "SettingsForm.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
               "RelativeDocumentMoniker": "SettingsForm.cs",
@@ -173,11 +175,12 @@
               "Title": "MainForm.Designer.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.Designer.cs",
               "RelativeDocumentMoniker": "MainForm.Designer.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.Designer.cs",
-              "RelativeToolTip": "MainForm.Designer.cs",
+              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.Designer.cs*",
+              "RelativeToolTip": "MainForm.Designer.cs*",
               "ViewState": "AgIAABMAAAAAAAAAAAAqwA0AAAA3AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-11T01:21:22.624Z"
+              "WhenOpened": "2026-04-11T01:21:22.624Z",
+              "EditorCaption": ""
             }
           ]
         }
