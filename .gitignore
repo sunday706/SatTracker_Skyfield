@@ -1,0 +1,7 @@
+bin/
+obj/
+
+*.log
+
+satellite_info.json
+satellite_visible.json
