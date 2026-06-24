@@ -42,7 +42,6 @@
             btnSetting = new ToolStripButton();
             panel5 = new Panel();
             panel1 = new Panel();
-            lblSatus = new Label();
             panel8 = new Panel();
             btnTraking = new GlassButton();
             btnStop = new GlassButton();
@@ -87,6 +86,7 @@
             panel11 = new Panel();
             plotView2 = new OxyPlot.WindowsForms.PlotView();
             panel6 = new Panel();
+            lblSatus = new Label();
             plotView3 = new OxyPlot.WindowsForms.PlotView();
             plotView1 = new OxyPlot.WindowsForms.PlotView();
             splitter1 = new Splitter();
@@ -199,7 +199,6 @@
             // 
             // panel1
             // 
-            panel1.Controls.Add(lblSatus);
             panel1.Controls.Add(panel8);
             panel1.Controls.Add(pnlAzi);
             panel1.Controls.Add(panel9);
@@ -211,17 +210,6 @@
             panel1.Name = "panel1";
             panel1.Size = new Size(971, 615);
             panel1.TabIndex = 7;
-            // 
-            // lblSatus
-            // 
-            lblSatus.AutoSize = true;
-            lblSatus.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
-            lblSatus.ForeColor = Color.Red;
-            lblSatus.Location = new Point(17, 595);
-            lblSatus.Name = "lblSatus";
-            lblSatus.Size = new Size(90, 15);
-            lblSatus.TabIndex = 3;
-            lblSatus.Text = "System Status...";
             // 
             // panel8
             // 
@@ -698,21 +686,33 @@
             // 
             // panel6
             // 
+            panel6.Controls.Add(lblSatus);
             panel6.Controls.Add(plotView3);
             panel6.Controls.Add(plotView1);
             panel6.Location = new Point(0, 380);
             panel6.Margin = new Padding(2);
             panel6.Name = "panel6";
-            panel6.Size = new Size(777, 186);
+            panel6.Size = new Size(777, 235);
             panel6.TabIndex = 0;
+            // 
+            // lblSatus
+            // 
+            lblSatus.AutoSize = true;
+            lblSatus.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
+            lblSatus.ForeColor = Color.Red;
+            lblSatus.Location = new Point(8, 217);
+            lblSatus.Name = "lblSatus";
+            lblSatus.Size = new Size(136, 15);
+            lblSatus.TabIndex = 3;
+            lblSatus.Text = "                                           ";
             // 
             // plotView3
             // 
-            plotView3.Location = new Point(387, -14);
+            plotView3.Location = new Point(387, -8);
             plotView3.Margin = new Padding(2);
             plotView3.Name = "plotView3";
             plotView3.PanCursor = Cursors.Hand;
-            plotView3.Size = new Size(388, 227);
+            plotView3.Size = new Size(388, 231);
             plotView3.TabIndex = 5;
             plotView3.Text = "plotView3";
             plotView3.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -721,11 +721,11 @@
             // 
             // plotView1
             // 
-            plotView1.Location = new Point(6, -14);
+            plotView1.Location = new Point(6, -8);
             plotView1.Margin = new Padding(2);
             plotView1.Name = "plotView1";
             plotView1.PanCursor = Cursors.Hand;
-            plotView1.Size = new Size(367, 227);
+            plotView1.Size = new Size(367, 232);
             plotView1.TabIndex = 4;
             plotView1.Text = "plotView1";
             plotView1.ZoomHorizontalCursor = Cursors.SizeWE;
@@ -832,7 +832,6 @@
             toolStrip1.PerformLayout();
             panel5.ResumeLayout(false);
             panel1.ResumeLayout(false);
-            panel1.PerformLayout();
             panel8.ResumeLayout(false);
             pnlAzi.ResumeLayout(false);
             pnlAzi.PerformLayout();
@@ -845,6 +844,7 @@
             tabPage2.ResumeLayout(false);
             panel11.ResumeLayout(false);
             panel6.ResumeLayout(false);
+            panel6.PerformLayout();
             panel2.ResumeLayout(false);
             panel4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridViewSatellites).EndInit();
