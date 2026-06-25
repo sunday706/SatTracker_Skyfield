@@ -454,14 +454,18 @@ namespace SatTracker
 
             try
             {
-                SetTrackingInfo("Đang đưa anten về Home: Azimuth 0°, Elevation 90°...");
+                float eleHomeRawDeg = GetFloatSetting("EleHomeRawDeg", 0f);
+                SetTrackingInfo($"Đang đưa anten về Home: Azimuth 0°, Elevation raw {eleHomeRawDeg:F2}°...");
                 btnGoHome.Enabled = false;
 
                 await Task.WhenAll(
                     _manual.GoToTargetAsync(Manual_Control.Axis.Azimuth, 0f),
-                    _manual.GoToTargetAsync(Manual_Control.Axis.Elevation, 90f));
+                    _manual.GoToTargetAsync(Manual_Control.Axis.Elevation, 0f,
+                        () => _encReader == null
+                            ? null
+                            : WrapSignedDeg(_encReader.RawEleDeg - eleHomeRawDeg)));
 
-                SetTrackingInfo("Đã đưa anten về Home: Azimuth 0°, Elevation 90°.");
+                SetTrackingInfo("Đã đưa anten về Home: Azimuth 0°, Elevation raw đúng vị trí home 90°.");
             }
             catch (OperationCanceledException)
             {
@@ -1643,6 +1647,13 @@ namespace SatTracker
             }
 
             return values[last];
+        }
+
+        private static float WrapSignedDeg(float deg)
+        {
+            while (deg > 180f) deg -= 360f;
+            while (deg < -180f) deg += 360f;
+            return deg;
         }
         private void OnInitialTimerElapsed(object sender, ElapsedEventArgs e)
         {

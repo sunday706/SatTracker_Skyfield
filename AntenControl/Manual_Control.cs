@@ -248,6 +248,16 @@ namespace AntenControl
             return GoToTargetAsync(ch, targetDeg, ch.GoCts.Token);
         }
 
+        public Task GoToTargetAsync(Axis axis, float targetDeg, Func<double?> currentDegProvider)
+        {
+            var ch = GetCh(axis);
+            ch.GoCts?.Cancel();
+            ch.GoCts?.Dispose();
+            ch.GoCts = new CancellationTokenSource();
+
+            return GoToTargetAsync(ch, targetDeg, ch.GoCts.Token, currentDegProvider);
+        }
+
         private void StartSpeedMonitor(AxisChannel ch)
         {
             StopSpeedMonitor(ch);
@@ -377,6 +387,12 @@ namespace AntenControl
             while (err > 180f) err -= 360f;
             while (err < -180f) err += 360f;
             return err;
+        }
+
+        private static float GetAxisErrorDeg(AxisChannel ch, float targetDeg, float currentDeg)
+        {
+            float err = targetDeg - currentDeg;
+            return ch.Axis == Axis.Azimuth ? WrapErrDeg(err) : err;
         }
 
         private MotionParameters GetMotionParameters()
@@ -514,8 +530,25 @@ namespace AntenControl
             return false;
         }
 
+        private bool TryGetEncoderDeg(AxisChannel ch, Func<double?>? currentDegProvider, out double currentDeg)
+        {
+            currentDeg = 0;
+            if (currentDegProvider != null)
+            {
+                double? providedDeg = currentDegProvider();
+                if (providedDeg.HasValue)
+                {
+                    currentDeg = providedDeg.Value;
+                    return true;
+                }
+            }
+
+            return TryGetEncoderDeg(ch, out currentDeg);
+        }
+
         
-        private async Task GoToTargetAsync(AxisChannel ch, float targetDeg, CancellationToken ct)
+        private async Task GoToTargetAsync(AxisChannel ch, float targetDeg, CancellationToken ct,
+            Func<double?>? currentDegProvider = null)
         {
             if (ch.Drive == null) return;
 
@@ -534,13 +567,13 @@ namespace AntenControl
 
                 while (!ct.IsCancellationRequested)
                 {
-                    if (!TryGetEncoderDeg(ch, out var currentDeg))
+                    if (!TryGetEncoderDeg(ch, currentDegProvider, out var currentDeg))
                     {
                         SetStatus(ch, "Read encoder error.");
                         break;
                     }
 
-                    float errDeg = WrapErrDeg(targetDeg - (float)currentDeg);
+                    float errDeg = GetAxisErrorDeg(ch, targetDeg, (float)currentDeg);
 
                     float absErrDeg = Math.Abs(errDeg);
                     if (absErrDeg <= tolDeg)
@@ -586,7 +619,7 @@ namespace AntenControl
                 return;
             }
 
-            float errDeg = WrapErrDeg(targetDeg - (float)currentDeg);
+            float errDeg = GetAxisErrorDeg(ch, targetDeg, (float)currentDeg);
             float absErrDeg = Math.Abs(errDeg);
 
             if (absErrDeg <= toleranceDeg)
