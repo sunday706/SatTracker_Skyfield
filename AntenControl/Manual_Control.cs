@@ -238,6 +238,16 @@ namespace AntenControl
             return TrackAxisToTargetAsync(GetCh(axis), targetDeg, toleranceDeg, ct);
         }
 
+        public Task GoToTargetAsync(Axis axis, float targetDeg)
+        {
+            var ch = GetCh(axis);
+            ch.GoCts?.Cancel();
+            ch.GoCts?.Dispose();
+            ch.GoCts = new CancellationTokenSource();
+
+            return GoToTargetAsync(ch, targetDeg, ch.GoCts.Token);
+        }
+
         private void StartSpeedMonitor(AxisChannel ch)
         {
             StopSpeedMonitor(ch);
@@ -516,44 +526,49 @@ namespace AntenControl
             ResetPid(ch);
             SetStatus(ch, $"Go to {targetDeg:F2}° ...");
 
-            // Đảm bảo động cơ ở Speed mode + Enabled
-            await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
-            await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
-
-            while (!ct.IsCancellationRequested)
+            try
             {
-                if (!TryGetEncoderDeg(ch, out var currentDeg))
+                // Đảm bảo động cơ ở Speed mode + Enabled
+                await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
+                await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
+
+                while (!ct.IsCancellationRequested)
                 {
-                    SetStatus(ch, "Read encoder error.");
-                    break;
+                    if (!TryGetEncoderDeg(ch, out var currentDeg))
+                    {
+                        SetStatus(ch, "Read encoder error.");
+                        break;
+                    }
+
+                    float errDeg = WrapErrDeg(targetDeg - (float)currentDeg);
+
+                    float absErrDeg = Math.Abs(errDeg);
+                    if (absErrDeg <= tolDeg)
+                    {
+                        // Đạt mục tiêu
+                        await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, ct).ConfigureAwait(true);
+                        ResetPid(ch);
+                        SetStatus(ch, "GO completed.");
+                        break;
+                    }
+
+                    MotionParameters settings = GetMotionParameters();
+                    int speedRpm = CalculatePidSpeedRpm(ch, errDeg, settings);
+                    await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
+
+                    //Cập nhật trạng thái
+                    SetStatus(ch, $"delta={errDeg:F2}°, V={speedRpm} RPM");
+
+                    // Chờ một thời gian trước khi lặp lại
+                    await Task.Delay(50, ct).ConfigureAwait(true);
                 }
-
-                float errDeg = WrapErrDeg(targetDeg - (float)currentDeg);
-
-                float absErrDeg = Math.Abs(errDeg);
-                if (absErrDeg <= tolDeg)
-                {
-                    // Đạt mục tiêu
-                    await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, ct).ConfigureAwait(true);
-                    ResetPid(ch);
-                    SetStatus(ch, "GO completed.");
-                    break;
-                }
-
-                MotionParameters settings = GetMotionParameters();
-                int speedRpm = CalculatePidSpeedRpm(ch, errDeg, settings);
-                await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
-
-                //Cập nhật trạng thái
-                SetStatus(ch, $"delta={errDeg:F2}°, V={speedRpm} RPM");
-
-                // Chờ một thời gian trước khi lặp lại
-                await Task.Delay(50, ct).ConfigureAwait(true);
             }
-
-            ch.IsGoing = false;
-            ch.Moving = false;
-            ApplyUiState(ch);
+            finally
+            {
+                ch.IsGoing = false;
+                ch.Moving = false;
+                ApplyUiState(ch);
+            }
         }
 
         private async Task TrackAxisToTargetAsync(AxisChannel ch, float targetDeg, float toleranceDeg,

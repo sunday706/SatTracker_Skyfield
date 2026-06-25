@@ -35,7 +35,6 @@ namespace SatTracker
         private string tleFilePath = "SatTLE.txt"; // Đường dẫn file TLE mặc định, có thể thay đổi
         private GMapOverlay satOverlay = new("satelliteOverlay");
         private GMapOverlay routesOverlay = new GMapOverlay("routes");
-        private GMapMarker? _trackedSatelliteMarker;
         private List<SatelliteVisible> visibilityList = new List<SatelliteVisible>();
         private List<SatelliteInfo> informationList = new List<SatelliteInfo>();
         private SatelliteInfo selectedSatellite;
@@ -137,9 +136,9 @@ namespace SatTracker
                 Acceleration = Math.Max(0f, GetFloatSetting("Acceleration", 100)),
                 Deceleration = Math.Max(0f, GetFloatSetting("Deceleration", 100)),
                 TrackingMinRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30)),
-                PidKp = Math.Max(0f, GetFloatSetting("PidKp", 20)),
-                PidKi = Math.Max(0f, GetFloatSetting("PidKi", 0)),
-                PidKd = Math.Max(0f, GetFloatSetting("PidKd", 0))
+                PidKp = Math.Max(0f, GetFloatSetting("PidKp", 25)),
+                PidKi = Math.Max(0f, GetFloatSetting("PidKi", 0.5f)),
+                PidKd = Math.Max(0f, GetFloatSetting("PidKd", 0.01f))
             };
         }
         private void SaveSetting(string key, object value)
@@ -376,6 +375,7 @@ namespace SatTracker
             btnSetting.Click += btnSetting_Click;
             btnStop.Click += btnStop_Click;
             btnTraking.Click += btnTraking_Click;
+            btnGoHome.Click += btnGoHome_Click;
             ApplyControlMode(ControlMode.Manual);
             SetManualButtonsEnabled(false);
             InitMap();
@@ -416,13 +416,71 @@ namespace SatTracker
         {
             ClearPendingTracking();
             StopAntennaTrajectoryTracking();
-            RemoveTrackedSatelliteMarker();
             if (_manual != null)
             {
                 await _manual.StopAllMotionAsync();
             }
             ApplyControlMode(ControlMode.Manual);
             SetTrackingInfo("Đã dừng tracking. Chế độ điều khiển tay.");
+        }
+
+        private async void btnGoHome_Click(object? sender, EventArgs e)
+        {
+            ClearPendingTracking();
+            StopAntennaTrajectoryTracking();
+            ApplyControlMode(ControlMode.Manual);
+
+            if (_manual == null)
+            {
+                SetTrackingInfo("Chưa khởi tạo điều khiển anten.");
+                return;
+            }
+
+            if (!IsServoReady(Manual_Control.Axis.Azimuth) || !IsServoReady(Manual_Control.Axis.Elevation))
+            {
+                SetTrackingInfo("Cần Connect và Enable cả 2 servo trước khi GO HOME.");
+                MessageBox.Show("Cần Connect và Enable cả 2 servo trước khi GO HOME.", "GO HOME",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!IsEncoderReady(Manual_Control.Axis.Azimuth) || !IsEncoderReady(Manual_Control.Axis.Elevation))
+            {
+                SetTrackingInfo("Cần Encoder Azimuth/Elevation có dữ liệu hợp lệ trước khi GO HOME.");
+                MessageBox.Show("Cần Encoder Azimuth/Elevation có dữ liệu hợp lệ trước khi GO HOME.", "GO HOME",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                SetTrackingInfo("Đang đưa anten về Home: Azimuth 0°, Elevation 90°...");
+                btnGoHome.Enabled = false;
+
+                await Task.WhenAll(
+                    _manual.GoToTargetAsync(Manual_Control.Axis.Azimuth, 0f),
+                    _manual.GoToTargetAsync(Manual_Control.Axis.Elevation, 90f));
+
+                SetTrackingInfo("Đã đưa anten về Home: Azimuth 0°, Elevation 90°.");
+            }
+            catch (OperationCanceledException)
+            {
+                SetTrackingInfo("GO HOME đã bị hủy.");
+            }
+            catch (TimeoutException ex)
+            {
+                SetTrackingInfo($"GO HOME timeout: {ex.Message}. Kiểm tra COM, nguồn servo, baudrate, dây RS485/Modbus.");
+            }
+            catch (Exception ex)
+            {
+                SetTrackingInfo($"Lỗi GO HOME: {ex.Message}");
+                MessageBox.Show($"Lỗi GO HOME: {ex.GetType().Name}: {ex.Message}", "GO HOME",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                UpdateTrackingButtonAvailability();
+            }
         }
 
         private void btnTraking_Click(object? sender, EventArgs e)
@@ -507,6 +565,7 @@ namespace SatTracker
             {
                 btnTraking.Enabled = false;
                 btnSunTracking.Enabled = false;
+                btnGoHome.Enabled = false;
                 return;
             }
 
@@ -516,6 +575,7 @@ namespace SatTracker
 
             btnTraking.Enabled = ready;
             btnSunTracking.Enabled = ready;
+            btnGoHome.Enabled = ready;
         }
 
         private void SetManualButtonsEnabled(bool enabled)
@@ -834,7 +894,6 @@ namespace SatTracker
         public void ClearAllPoints()
         {
             satOverlay.Markers.Clear();
-            _trackedSatelliteMarker = null;
         }
         // Phương thức xóa tất cả đường
         public void ClearAllLines()
@@ -1057,11 +1116,10 @@ namespace SatTracker
             StopAntennaTrajectoryTracking();
 
             ClearAllLines();
-            RemoveTrackedSatelliteMarker();
             DrawLineFromArrays(selectedSatellite.LatitudeAngles,
                                selectedSatellite.LongtitudeAngles,
                                Color.Red, 3, "");
-            UpdateTrackedSatelliteMarker(DateTime.Now);
+            DisplaySatelliteAtTimestamp();
             DrawElevationChart(selectedSatellite.TrackTimestamps,
                                selectedSatellite.ElevationAngles,
                                elevationAnglesRecei,
@@ -1228,18 +1286,16 @@ namespace SatTracker
             _pendingPrepositionBusy = true;
             try
             {
+                float targetAzi = (float)azimuthAnglesSend[0];
+                float targetEle = (float)elevationAnglesSend[0];
                 float minElevationDeg = GetFloatSetting("TrackingMinElevationDeg", 10f);
-                if (!TryGetFirstTrackPointAtOrAboveElevationLimit(
-                    minElevationDeg,
-                    out int targetIndex,
-                    out DateTime targetTime,
-                    out float targetAzi,
-                    out float targetEle))
+
+                if (targetEle < minElevationDeg)
                 {
                     _ = _manual.StopManualMoveAsync(Manual_Control.Axis.Azimuth);
                     _ = _manual.StopManualMoveAsync(Manual_Control.Axis.Elevation);
                     UpdatePendingTrackingInfo(
-                        $"Đang chờ, chưa quay anten vì toàn bộ track chưa có điểm Elevation đạt ngưỡng {minElevationDeg:F2}°.");
+                        $"Đang chờ, chưa quay anten vì Elevation điểm đầu {targetEle:F2}° nhỏ hơn ngưỡng {minElevationDeg:F2}°.");
                     return;
                 }
 
@@ -1262,15 +1318,7 @@ namespace SatTracker
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg));
 
                 UpdatePendingTrackingInfo(
-                    $"Đang đưa anten tới điểm hợp lệ đầu tiên của track để chờ sẵn: #{targetIndex + 1} lúc {targetTime:HH:mm:ss}, Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
-            }
-            catch (OperationCanceledException)
-            {
-                UpdatePendingTrackingInfo("Lệnh đưa anten tới điểm đầu track đã bị hủy.");
-            }
-            catch (TimeoutException ex)
-            {
-                UpdatePendingTrackingInfo($"Timeout khi đưa anten tới điểm đầu track: {ex.Message}");
+                    $"Đang đưa anten tới điểm đầu track để chờ sẵn: Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
             }
             catch (Exception ex)
             {
@@ -1280,38 +1328,6 @@ namespace SatTracker
             {
                 _pendingPrepositionBusy = false;
             }
-        }
-
-        private bool TryGetFirstTrackPointAtOrAboveElevationLimit(
-            float minElevationDeg,
-            out int targetIndex,
-            out DateTime targetTime,
-            out float targetAzi,
-            out float targetEle)
-        {
-            targetIndex = -1;
-            targetTime = DateTime.MinValue;
-            targetAzi = 0f;
-            targetEle = 0f;
-
-            if (timeStampsSend == null || azimuthAnglesSend == null || elevationAnglesSend == null)
-            {
-                return false;
-            }
-
-            int count = Math.Min(timeStampsSend.Count, Math.Min(azimuthAnglesSend.Count, elevationAnglesSend.Count));
-            for (int i = 0; i < count; i++)
-            {
-                if (elevationAnglesSend[i] < minElevationDeg) continue;
-
-                targetIndex = i;
-                targetTime = timeStampsSend[i];
-                targetAzi = (float)azimuthAnglesSend[i];
-                targetEle = (float)elevationAnglesSend[i];
-                return true;
-            }
-
-            return false;
         }
 
         private void UpdatePendingTrackingInfo(string extraMessage = "")
@@ -1543,13 +1559,10 @@ namespace SatTracker
                 {
                     StopAntennaTrajectoryTracking();
                     ClearAllLines();
-                    RemoveTrackedSatelliteMarker();
                     ApplyControlMode(ControlMode.Manual);
                     SetTrackingInfo("Tracking completed. Manual mode.");
                     return;
                 }
-
-                UpdateTrackedSatelliteMarker(now);
 
                 float targetAzi = (float)GetTrajectoryValueAtTime(timeStampsSend, azimuthAnglesSend, now);
                 float targetEle = (float)GetTrajectoryValueAtTime(timeStampsSend, elevationAnglesSend, now);
@@ -1582,18 +1595,10 @@ namespace SatTracker
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Azimuth, targetAzi, toleranceDeg),
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg));
             }
-            catch (OperationCanceledException)
-            {
-                SetTrackingInfo("Lệnh tracking đã bị hủy. Nếu bạn vừa bấm STOP hoặc đổi chế độ thì có thể bỏ qua thông báo này.");
-            }
-            catch (TimeoutException ex)
-            {
-                SetTrackingInfo($"Tracking timeout: {ex.Message}. Kiểm tra COM, nguồn servo, baudrate, dây RS485/Modbus.");
-            }
             catch (Exception ex)
             {
                 StopAntennaTrajectoryTracking();
-                MessageBox.Show($"Loi tracking anten: {ex.GetType().Name}: {ex.Message}", "Tracking",
+                MessageBox.Show($"Loi tracking anten: {ex.Message}", "Tracking",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -1639,58 +1644,6 @@ namespace SatTracker
 
             return values[last];
         }
-
-        private void UpdateTrackedSatelliteMarker(DateTime now)
-        {
-            if (selectedSatellite == null ||
-                selectedSatellite.TrackTimestamps == null ||
-                selectedSatellite.LatitudeAngles == null ||
-                selectedSatellite.LongtitudeAngles == null ||
-                selectedSatellite.TrackTimestamps.Count == 0 ||
-                selectedSatellite.LatitudeAngles.Count == 0 ||
-                selectedSatellite.LongtitudeAngles.Count == 0)
-            {
-                return;
-            }
-
-            double lat = GetTrajectoryValueAtTime(
-                selectedSatellite.TrackTimestamps,
-                selectedSatellite.LatitudeAngles,
-                now);
-            double lon = GetTrajectoryValueAtTime(
-                selectedSatellite.TrackTimestamps,
-                selectedSatellite.LongtitudeAngles,
-                now);
-
-            PointLatLng position = new PointLatLng(lat, lon);
-            if (_trackedSatelliteMarker == null)
-            {
-                _trackedSatelliteMarker = new GMapSatelliteMarker(position, 1.2, Color.Gold, defaultZoom: 7)
-                {
-                    ToolTipMode = MarkerTooltipMode.Always
-                };
-                satOverlay.Markers.Add(_trackedSatelliteMarker);
-            }
-            else
-            {
-                _trackedSatelliteMarker.Position = position;
-            }
-
-            _trackedSatelliteMarker.ToolTipText =
-                $"{selectedSatellite.Name}\nTime: {now:HH:mm:ss}\nLat: {lat:F6}\nLon: {lon:F6}";
-
-            gMap.Refresh();
-        }
-
-        private void RemoveTrackedSatelliteMarker()
-        {
-            if (_trackedSatelliteMarker == null) return;
-
-            satOverlay.Markers.Remove(_trackedSatelliteMarker);
-            _trackedSatelliteMarker = null;
-            gMap.Refresh();
-        }
-
         private void OnInitialTimerElapsed(object sender, ElapsedEventArgs e)
         {
             SendInitialData(null);
