@@ -60,7 +60,18 @@ public sealed class ModbusRtuPort : IDisposable
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(timeoutMs);
-            await using (cts.Token.Register(() => tcs.TrySetCanceled()))
+            await using (cts.Token.Register(() =>
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    tcs.TrySetCanceled(ct);
+                }
+                else
+                {
+                    tcs.TrySetException(new TimeoutException(
+                        $"No Modbus response from {_port.PortName} within {timeoutMs} ms."));
+                }
+            }))
             {
                 return await tcs.Task.ConfigureAwait(false);
             }

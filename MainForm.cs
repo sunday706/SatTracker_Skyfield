@@ -1260,6 +1260,14 @@ namespace SatTracker
                 UpdatePendingTrackingInfo(
                     $"Đang đưa anten tới điểm hợp lệ đầu tiên của track để chờ sẵn: #{targetIndex + 1} lúc {targetTime:HH:mm:ss}, Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
             }
+            catch (OperationCanceledException)
+            {
+                UpdatePendingTrackingInfo("Lệnh đưa anten tới điểm đầu track đã bị hủy.");
+            }
+            catch (TimeoutException ex)
+            {
+                UpdatePendingTrackingInfo($"Timeout khi đưa anten tới điểm đầu track: {ex.Message}");
+            }
             catch (Exception ex)
             {
                 UpdatePendingTrackingInfo($"Lỗi đưa anten tới điểm đầu track: {ex.Message}");
@@ -1567,10 +1575,18 @@ namespace SatTracker
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Azimuth, targetAzi, toleranceDeg),
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg));
             }
+            catch (OperationCanceledException)
+            {
+                SetTrackingInfo("Lệnh tracking đã bị hủy. Nếu bạn vừa bấm STOP hoặc đổi chế độ thì có thể bỏ qua thông báo này.");
+            }
+            catch (TimeoutException ex)
+            {
+                SetTrackingInfo($"Tracking timeout: {ex.Message}. Kiểm tra COM, nguồn servo, baudrate, dây RS485/Modbus.");
+            }
             catch (Exception ex)
             {
                 StopAntennaTrajectoryTracking();
-                MessageBox.Show($"Loi tracking anten: {ex.Message}", "Tracking",
+                MessageBox.Show($"Loi tracking anten: {ex.GetType().Name}: {ex.Message}", "Tracking",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
