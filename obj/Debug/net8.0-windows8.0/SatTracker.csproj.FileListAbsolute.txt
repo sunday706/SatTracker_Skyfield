@@ -414,3 +414,4 @@ D:\Satellite_Anten_CTRL\V2\SatTracker_Skyfield\obj\Debug\net8.0-windows8.0\ref\S
 D:\Satellite_Anten_CTRL\V2\SatTracker_Skyfield\obj\Debug\net8.0-windows8.0\SatTracker.SettingsForm.resources
 D:\Satellite_Anten_CTRL\SatTracker_Skyfield\obj\Debug\net8.0-windows8.0\SatTracker.SettingsForm.resources
 D:\Satellite_Anten_CTRL\SatTracker_Skyfield\obj\Debug\net8.0-windows8.0\SatTracker.sourcelink.json
+D:\Document\SatTracker_Skyfield\obj\Debug\net8.0-windows8.0\SatTracker.SettingsForm.resources

@@ -18,6 +18,10 @@ namespace SatTracker
         public List<double> ElevationAngles { get; set; }
         public List<double> LatitudeAngles { get; set; }
         public List<double> LongtitudeAngles { get; set; }
+        public List<double> SolarAzimuth { get; set; }
+        public List<double> SolarElevation { get; set; }
+        public List<double> RelativeAzimuth { get; set; }
+        public List<double> RelativeElevation { get; set; }      
     }
     public class SatelliteInfoDisplay
     {

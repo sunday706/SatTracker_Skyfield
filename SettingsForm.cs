@@ -191,6 +191,7 @@ namespace SatTracker
             AddNumberBox(page, "MaxRpm", "Max RPM", 2000, 1, 4100, 72, 0);
             AddNumberBox(page, "Acceleration", "Acceleration", 100, 0, 100000, 120, 3);
             AddNumberBox(page, "Deceleration", "Deceleration", 100, 0, 100000, 168, 3);
+            AddNumberBox(page, "TrackingMinElevationDeg", "Tracking Elevation Min (deg)", 10, -90, 180, 216, 3);
             return page;
         }
 
