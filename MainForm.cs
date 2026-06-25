@@ -35,6 +35,7 @@ namespace SatTracker
         private string tleFilePath = "SatTLE.txt"; // Đường dẫn file TLE mặc định, có thể thay đổi
         private GMapOverlay satOverlay = new("satelliteOverlay");
         private GMapOverlay routesOverlay = new GMapOverlay("routes");
+        private GMapMarker? _trackedSatelliteMarker;
         private List<SatelliteVisible> visibilityList = new List<SatelliteVisible>();
         private List<SatelliteInfo> informationList = new List<SatelliteInfo>();
         private SatelliteInfo selectedSatellite;
@@ -415,6 +416,7 @@ namespace SatTracker
         {
             ClearPendingTracking();
             StopAntennaTrajectoryTracking();
+            RemoveTrackedSatelliteMarker();
             if (_manual != null)
             {
                 await _manual.StopAllMotionAsync();
@@ -832,6 +834,7 @@ namespace SatTracker
         public void ClearAllPoints()
         {
             satOverlay.Markers.Clear();
+            _trackedSatelliteMarker = null;
         }
         // Phương thức xóa tất cả đường
         public void ClearAllLines()
@@ -1054,10 +1057,11 @@ namespace SatTracker
             StopAntennaTrajectoryTracking();
 
             ClearAllLines();
+            RemoveTrackedSatelliteMarker();
             DrawLineFromArrays(selectedSatellite.LatitudeAngles,
                                selectedSatellite.LongtitudeAngles,
                                Color.Red, 3, "");
-            DisplaySatelliteAtTimestamp();
+            UpdateTrackedSatelliteMarker(DateTime.Now);
             DrawElevationChart(selectedSatellite.TrackTimestamps,
                                selectedSatellite.ElevationAngles,
                                elevationAnglesRecei,
@@ -1539,10 +1543,13 @@ namespace SatTracker
                 {
                     StopAntennaTrajectoryTracking();
                     ClearAllLines();
+                    RemoveTrackedSatelliteMarker();
                     ApplyControlMode(ControlMode.Manual);
                     SetTrackingInfo("Tracking completed. Manual mode.");
                     return;
                 }
+
+                UpdateTrackedSatelliteMarker(now);
 
                 float targetAzi = (float)GetTrajectoryValueAtTime(timeStampsSend, azimuthAnglesSend, now);
                 float targetEle = (float)GetTrajectoryValueAtTime(timeStampsSend, elevationAnglesSend, now);
@@ -1632,6 +1639,58 @@ namespace SatTracker
 
             return values[last];
         }
+
+        private void UpdateTrackedSatelliteMarker(DateTime now)
+        {
+            if (selectedSatellite == null ||
+                selectedSatellite.TrackTimestamps == null ||
+                selectedSatellite.LatitudeAngles == null ||
+                selectedSatellite.LongtitudeAngles == null ||
+                selectedSatellite.TrackTimestamps.Count == 0 ||
+                selectedSatellite.LatitudeAngles.Count == 0 ||
+                selectedSatellite.LongtitudeAngles.Count == 0)
+            {
+                return;
+            }
+
+            double lat = GetTrajectoryValueAtTime(
+                selectedSatellite.TrackTimestamps,
+                selectedSatellite.LatitudeAngles,
+                now);
+            double lon = GetTrajectoryValueAtTime(
+                selectedSatellite.TrackTimestamps,
+                selectedSatellite.LongtitudeAngles,
+                now);
+
+            PointLatLng position = new PointLatLng(lat, lon);
+            if (_trackedSatelliteMarker == null)
+            {
+                _trackedSatelliteMarker = new GMapSatelliteMarker(position, 1.2, Color.Gold, defaultZoom: 7)
+                {
+                    ToolTipMode = MarkerTooltipMode.Always
+                };
+                satOverlay.Markers.Add(_trackedSatelliteMarker);
+            }
+            else
+            {
+                _trackedSatelliteMarker.Position = position;
+            }
+
+            _trackedSatelliteMarker.ToolTipText =
+                $"{selectedSatellite.Name}\nTime: {now:HH:mm:ss}\nLat: {lat:F6}\nLon: {lon:F6}";
+
+            gMap.Refresh();
+        }
+
+        private void RemoveTrackedSatelliteMarker()
+        {
+            if (_trackedSatelliteMarker == null) return;
+
+            satOverlay.Markers.Remove(_trackedSatelliteMarker);
+            _trackedSatelliteMarker = null;
+            gMap.Refresh();
+        }
+
         private void OnInitialTimerElapsed(object sender, ElapsedEventArgs e)
         {
             SendInitialData(null);
