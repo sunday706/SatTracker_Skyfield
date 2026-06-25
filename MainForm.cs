@@ -360,7 +360,10 @@ namespace SatTracker
                 elId: 1,
                 defaultRpm: defaultRpm,
                 modbusBaud: modbusBaud,
-                motionParametersProvider: GetMotionParameters
+                motionParametersProvider: GetMotionParameters,
+                rawEleDegProvider: () => _encReader == null ? null : _encReader.RawEleDeg,
+                eleHomeRawDegProvider: () => GetFloatSetting("EleHomeRawDeg", 0f),
+                eleHomeDegProvider: () => GetFloatSetting("EleHomeDeg", 90f)
             );
             _manual.StateChanged += UpdateTrackingButtonAvailability;
             _manual.SetUiLocked(_controlMode == ControlMode.Tracking);

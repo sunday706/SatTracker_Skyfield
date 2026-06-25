@@ -51,6 +51,9 @@ namespace AntenControl
         private readonly int _defaultRpm;
         private readonly int _modbusBaud;
         private readonly Func<MotionParameters> _motionParametersProvider;
+        private readonly Func<float?>? _rawEleDegProvider;
+        private readonly Func<float>? _eleHomeRawDegProvider;
+        private readonly Func<float>? _eleHomeDegProvider;
 
         // ===== Host + manual buttons (shared area) =====
         private readonly Form _host;
@@ -124,7 +127,10 @@ namespace AntenControl
             byte elId = 1,
             int defaultRpm = 300,
             int modbusBaud = 19200,
-            Func<MotionParameters>? motionParametersProvider = null
+            Func<MotionParameters>? motionParametersProvider = null,
+            Func<float?>? rawEleDegProvider = null,
+            Func<float>? eleHomeRawDegProvider = null,
+            Func<float>? eleHomeDegProvider = null
         )
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
@@ -144,6 +150,9 @@ namespace AntenControl
             {
                 DefaultRpm = _defaultRpm
             });
+            _rawEleDegProvider = rawEleDegProvider;
+            _eleHomeRawDegProvider = eleHomeRawDegProvider;
+            _eleHomeDegProvider = eleHomeDegProvider;
 
             _az = new AxisChannel(Axis.Azimuth, azUi ?? throw new ArgumentNullException(nameof(azUi)), _azCom, _azId);
             _el = new AxisChannel(Axis.Elevation, elUi ?? throw new ArgumentNullException(nameof(elUi)), _elCom, _elId);
@@ -354,7 +363,21 @@ namespace AntenControl
 
                     try
                     {
-                        await GoToTargetAsync(ch, (float)targetDeg, ch.GoCts.Token).ConfigureAwait(true);
+                        if (TryBuildElevationRawTarget(ch, (float)targetDeg,
+                                out var rawTargetDeg, out var currentRawDegProvider, out var validationError))
+                        {
+                            await GoToTargetAsync(ch, rawTargetDeg, ch.GoCts.Token, currentRawDegProvider).ConfigureAwait(true);
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrWhiteSpace(validationError))
+                            {
+                                SetStatus(ch, validationError);
+                                return;
+                            }
+
+                            await GoToTargetAsync(ch, (float)targetDeg, ch.GoCts.Token).ConfigureAwait(true);
+                        }
                     }
                     catch (OperationCanceledException)
                     {
@@ -380,6 +403,55 @@ namespace AntenControl
             }
             deg = 0;
             return false;
+        }
+
+        private bool TryBuildElevationRawTarget(AxisChannel ch, float targetDisplayDeg,
+            out float targetRawOffsetDeg, out Func<double?>? currentRawOffsetProvider, out string? validationError)
+        {
+            targetRawOffsetDeg = targetDisplayDeg;
+            currentRawOffsetProvider = null;
+            validationError = null;
+
+            if (ch.Axis != Axis.Elevation ||
+                _rawEleDegProvider == null ||
+                _eleHomeRawDegProvider == null ||
+                _eleHomeDegProvider == null)
+            {
+                return false;
+            }
+
+            float? rawEleDeg = _rawEleDegProvider();
+            if (!rawEleDeg.HasValue)
+            {
+                validationError = "Read raw elevation encoder error.";
+                return false;
+            }
+
+            float homeRawDeg = _eleHomeRawDegProvider();
+            float homeDisplayDeg = _eleHomeDegProvider();
+            if (targetDisplayDeg > homeDisplayDeg)
+            {
+                validationError = $"Target Elevation > max {homeDisplayDeg:F2} deg.";
+                return false;
+            }
+
+            if (targetDisplayDeg < 0f)
+            {
+                validationError = "Target Elevation invalid.";
+                return false;
+            }
+
+            float currentRawOffsetDeg = WrapErrDeg(rawEleDeg.Value - homeRawDeg);
+            float side = currentRawOffsetDeg < -0.1f ? -1f : 1f;
+            targetRawOffsetDeg = side * (homeDisplayDeg - targetDisplayDeg);
+            currentRawOffsetProvider = () =>
+            {
+                float? currentRawDeg = _rawEleDegProvider();
+                if (!currentRawDeg.HasValue) return null;
+                return WrapErrDeg(currentRawDeg.Value - _eleHomeRawDegProvider());
+            };
+
+            return true;
         }
 
         private static float WrapErrDeg(float err)
