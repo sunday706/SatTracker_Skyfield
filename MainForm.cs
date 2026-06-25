@@ -1224,16 +1224,18 @@ namespace SatTracker
             _pendingPrepositionBusy = true;
             try
             {
-                float targetAzi = (float)azimuthAnglesSend[0];
-                float targetEle = (float)elevationAnglesSend[0];
                 float minElevationDeg = GetFloatSetting("TrackingMinElevationDeg", 10f);
-
-                if (targetEle < minElevationDeg)
+                if (!TryGetFirstTrackPointAtOrAboveElevationLimit(
+                    minElevationDeg,
+                    out int targetIndex,
+                    out DateTime targetTime,
+                    out float targetAzi,
+                    out float targetEle))
                 {
                     _ = _manual.StopManualMoveAsync(Manual_Control.Axis.Azimuth);
                     _ = _manual.StopManualMoveAsync(Manual_Control.Axis.Elevation);
                     UpdatePendingTrackingInfo(
-                        $"Đang chờ, chưa quay anten vì Elevation điểm đầu {targetEle:F2}° nhỏ hơn ngưỡng {minElevationDeg:F2}°.");
+                        $"Đang chờ, chưa quay anten vì toàn bộ track chưa có điểm Elevation đạt ngưỡng {minElevationDeg:F2}°.");
                     return;
                 }
 
@@ -1256,7 +1258,7 @@ namespace SatTracker
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg));
 
                 UpdatePendingTrackingInfo(
-                    $"Đang đưa anten tới điểm đầu track để chờ sẵn: Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
+                    $"Đang đưa anten tới điểm hợp lệ đầu tiên của track để chờ sẵn: #{targetIndex + 1} lúc {targetTime:HH:mm:ss}, Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
             }
             catch (Exception ex)
             {
@@ -1266,6 +1268,38 @@ namespace SatTracker
             {
                 _pendingPrepositionBusy = false;
             }
+        }
+
+        private bool TryGetFirstTrackPointAtOrAboveElevationLimit(
+            float minElevationDeg,
+            out int targetIndex,
+            out DateTime targetTime,
+            out float targetAzi,
+            out float targetEle)
+        {
+            targetIndex = -1;
+            targetTime = DateTime.MinValue;
+            targetAzi = 0f;
+            targetEle = 0f;
+
+            if (timeStampsSend == null || azimuthAnglesSend == null || elevationAnglesSend == null)
+            {
+                return false;
+            }
+
+            int count = Math.Min(timeStampsSend.Count, Math.Min(azimuthAnglesSend.Count, elevationAnglesSend.Count));
+            for (int i = 0; i < count; i++)
+            {
+                if (elevationAnglesSend[i] < minElevationDeg) continue;
+
+                targetIndex = i;
+                targetTime = timeStampsSend[i];
+                targetAzi = (float)azimuthAnglesSend[i];
+                targetEle = (float)elevationAnglesSend[i];
+                return true;
+            }
+
+            return false;
         }
 
         private void UpdatePendingTrackingInfo(string extraMessage = "")
