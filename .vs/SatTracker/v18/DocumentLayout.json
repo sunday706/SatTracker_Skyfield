@@ -3,7 +3,7 @@
   "WorkspaceRootPath": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
@@ -106,8 +106,7 @@
               "RelativeToolTip": "MainForm.cs",
               "ViewState": "AgIAACoBAAAAAAAAAAAUwEgBAABRAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-12T20:07:43.36Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-12T20:07:43.36Z"
             },
             {
               "$type": "Document",

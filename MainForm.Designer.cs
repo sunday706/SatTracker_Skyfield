@@ -277,7 +277,7 @@
             lblSatus.Dock = DockStyle.Bottom;
             lblSatus.Font = new Font("Times New Roman", 12F, FontStyle.Italic, GraphicsUnit.Point, 0);
             lblSatus.ForeColor = Color.Red;
-            lblSatus.Location = new Point(811, 410);
+            lblSatus.Location = new Point(0, 410);
             lblSatus.Name = "lblSatus";
             lblSatus.Size = new Size(181, 19);
             lblSatus.TabIndex = 3;
@@ -289,7 +289,7 @@
             gMap.Bearing = 0F;
             gMap.BorderStyle = BorderStyle.Fixed3D;
             gMap.CanDragMap = true;
-            gMap.Dock = DockStyle.Left;
+            gMap.Dock = DockStyle.Fill;
             gMap.EmptyTileColor = Color.Navy;
             gMap.GrayScaleMode = false;
             gMap.HelperLineOption = GMap.NET.WindowsForms.HelperLineOptions.DontShow;
