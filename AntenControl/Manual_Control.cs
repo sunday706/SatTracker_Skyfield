@@ -48,8 +48,8 @@ namespace AntenControl
         public sealed class PidAutoTuneOptions
         {
             public int TestRpm { get; init; } = 80;
-            public float RelayAmplitudeDeg { get; init; } = 1.0f;
-            public float MaxTravelDeg { get; init; } = 5.0f;
+            public float RelayAmplitudeDeg { get; init; } = 10.0f;
+            public float MaxTravelDeg { get; init; } = 20.0f;
             public int SampleIntervalMs { get; init; } = 50;
             public int RequiredSwitches { get; init; } = 8;
             public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(45);

@@ -687,7 +687,8 @@ namespace SatTracker
             _ = _manual?.StopManualMoveAsync(axis);
         }
 
-        public async Task<Manual_Control.PidAutoTuneResult> AutoTunePidAsync(Manual_Control.Axis axis)
+        public async Task<Manual_Control.PidAutoTuneResult> AutoTunePidAsync(Manual_Control.Axis axis,
+            Manual_Control.PidAutoTuneOptions? options = null)
         {
             if (_manual == null)
             {
@@ -713,7 +714,7 @@ namespace SatTracker
                 ? Manual_Control.Axis.Elevation
                 : Manual_Control.Axis.Azimuth;
             await _manual.StopManualMoveAsync(otherAxis);
-            return await _manual.AutoTunePidAsync(axis);
+            return await _manual.AutoTunePidAsync(axis, options);
         }
 
         // Hàm để thay đổi đường dẫn file TLE (gọi từ UI hoặc logic khác)

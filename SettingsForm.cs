@@ -51,12 +51,12 @@ namespace SatTracker
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
-            ClientSize = new Size(620, 620);
+            ClientSize = new Size(620, 720);
 
             var tabs = new TabControl
             {
                 Dock = DockStyle.Top,
-                Height = 570
+                Height = 670
             };
 
             tabs.TabPages.Add(CreateComPage());
@@ -71,7 +71,7 @@ namespace SatTracker
                 Width = 90,
                 Height = 32,
                 Anchor = AnchorStyles.Right | AnchorStyles.Bottom,
-                Location = new Point(ClientSize.Width - 200, 572)
+                Location = new Point(ClientSize.Width - 200, 672)
             };
             btnSave.Click += (_, e) =>
             {
@@ -88,7 +88,7 @@ namespace SatTracker
                 Width = 90,
                 Height = 32,
                 Anchor = AnchorStyles.Right | AnchorStyles.Bottom,
-                Location = new Point(ClientSize.Width - 100, 572)
+                Location = new Point(ClientSize.Width - 100, 672)
             };
 
             AcceptButton = btnSave;
@@ -216,6 +216,11 @@ namespace SatTracker
             _btnTuneElePid = CreateAutoTuneButton(272, Manual_Control.Axis.Elevation);
             page.Controls.Add(_btnTuneElePid);
 
+            page.Controls.Add(CreateSectionLabel("Auto Tune", 408));
+            AddNumberBox(page, "PidAutoTuneAmplitudeDeg", "Tune Amplitude (deg)", 10, 0.1m, 90, 440, 2);
+            AddNumberBox(page, "PidAutoTuneMaxTravelDeg", "Max Travel (deg)", 20, 1, 180, 488, 2);
+            AddNumberBox(page, "PidAutoTuneRpm", "Tune RPM", 80, 1, 4100, 536, 0);
+
             _lblPidTuneStatus = new Label
             {
                 Text = "Auto tune status: idle",
@@ -224,7 +229,7 @@ namespace SatTracker
                 TextAlign = ContentAlignment.MiddleLeft,
                 Width = 546,
                 Height = 56,
-                Location = new Point(24, 440)
+                Location = new Point(24, 584)
             };
             page.Controls.Add(_lblPidTuneStatus);
             return page;
@@ -428,7 +433,7 @@ namespace SatTracker
 
             try
             {
-                var result = await _mainForm.AutoTunePidAsync(axis);
+                var result = await _mainForm.AutoTunePidAsync(axis, ReadPidAutoTuneOptions());
                 if (result.Success)
                 {
                     ApplyPidTuneResult(result);
@@ -455,6 +460,20 @@ namespace SatTracker
                 _pidAutoTuneBusy = false;
                 RefreshHomeReadout();
             }
+        }
+
+        private Manual_Control.PidAutoTuneOptions ReadPidAutoTuneOptions()
+        {
+            float amplitudeDeg = ReadFloatInput("PidAutoTuneAmplitudeDeg", 10f);
+            float maxTravelDeg = ReadFloatInput("PidAutoTuneMaxTravelDeg", 20f);
+            int testRpm = Math.Max(1, (int)Math.Round(ReadFloatInput("PidAutoTuneRpm", 80f)));
+
+            return new Manual_Control.PidAutoTuneOptions
+            {
+                RelayAmplitudeDeg = amplitudeDeg,
+                MaxTravelDeg = Math.Max(maxTravelDeg, amplitudeDeg + 1f),
+                TestRpm = testRpm
+            };
         }
 
         private void ApplyPidTuneResult(Manual_Control.PidAutoTuneResult result)
