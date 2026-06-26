@@ -37,9 +37,36 @@ namespace AntenControl
             public float Acceleration { get; init; } = 100f;
             public float Deceleration { get; init; } = 100f;
             public int TrackingMinRpm { get; init; } = 30;
-            public float PidKp { get; init; } = 20f;
-            public float PidKi { get; init; }
-            public float PidKd { get; init; }
+            public float AziPidKp { get; init; } = 20f;
+            public float AziPidKi { get; init; }
+            public float AziPidKd { get; init; }
+            public float ElePidKp { get; init; } = 20f;
+            public float ElePidKi { get; init; }
+            public float ElePidKd { get; init; }
+        }
+
+        public sealed class PidAutoTuneOptions
+        {
+            public int TestRpm { get; init; } = 80;
+            public float RelayAmplitudeDeg { get; init; } = 1.0f;
+            public float MaxTravelDeg { get; init; } = 5.0f;
+            public int SampleIntervalMs { get; init; } = 50;
+            public int RequiredSwitches { get; init; } = 8;
+            public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(45);
+        }
+
+        public sealed class PidAutoTuneResult
+        {
+            public Axis Axis { get; init; }
+            public bool Success { get; init; }
+            public string Message { get; init; } = string.Empty;
+            public float Kp { get; init; }
+            public float Ki { get; init; }
+            public float Kd { get; init; }
+            public float UltimateGain { get; init; }
+            public float UltimatePeriodSec { get; init; }
+            public float OscillationAmplitudeDeg { get; init; }
+            public int SwitchCount { get; init; }
         }
 
         // ===== Config per channel =====
@@ -208,6 +235,12 @@ namespace AntenControl
             await Task.WhenAll(
                 StopMoveAsync(_az),
                 StopMoveAsync(_el)).ConfigureAwait(true);
+        }
+
+        public Task<PidAutoTuneResult> AutoTunePidAsync(Axis axis, PidAutoTuneOptions? options = null,
+            CancellationToken ct = default)
+        {
+            return AutoTunePidAsync(GetCh(axis), options ?? new PidAutoTuneOptions(), ct);
         }
 
         public bool IsAxisConnected(Axis axis)
@@ -467,6 +500,199 @@ namespace AntenControl
             return ch.Axis == Axis.Azimuth ? WrapErrDeg(err) : err;
         }
 
+        private async Task<PidAutoTuneResult> AutoTunePidAsync(AxisChannel ch, PidAutoTuneOptions options,
+            CancellationToken ct)
+        {
+            if (!ch.Connected || !ch.Enabled || ch.Drive == null)
+            {
+                return new PidAutoTuneResult
+                {
+                    Axis = ch.Axis,
+                    Success = false,
+                    Message = "Servo must be connected and enabled before PID auto tune."
+                };
+            }
+
+            if (!TryGetEncoderDeg(ch, out var startDeg))
+            {
+                return new PidAutoTuneResult
+                {
+                    Axis = ch.Axis,
+                    Success = false,
+                    Message = "Cannot read encoder for PID auto tune."
+                };
+            }
+
+            MotionParameters settings = GetMotionParameters();
+            int testRpm = Math.Clamp(Math.Abs(options.TestRpm), 1, Math.Max(1, settings.MaxRpm));
+            float relayAmplitudeDeg = Math.Clamp(options.RelayAmplitudeDeg, 0.1f, 30f);
+            float maxTravelDeg = Math.Max(relayAmplitudeDeg + 0.5f, options.MaxTravelDeg);
+            int sampleIntervalMs = Math.Clamp(options.SampleIntervalMs, 20, 1000);
+            int requiredSwitches = Math.Clamp(options.RequiredSwitches, 6, 40);
+            TimeSpan timeout = options.Timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(45) : options.Timeout;
+
+            float targetDeg = (float)startDeg;
+            float lowLimitDeg = targetDeg - maxTravelDeg;
+            float highLimitDeg = targetDeg + maxTravelDeg;
+            var switchTimes = new System.Collections.Generic.List<DateTime>();
+            float minDeg = targetDeg;
+            float maxDeg = targetDeg;
+            int direction = 1;
+            DateTime startedUtc = DateTime.UtcNow;
+
+            ch.MotionCts?.Cancel();
+            ch.MotionCts?.Dispose();
+            ch.MotionCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            CancellationToken tuneCt = ch.MotionCts.Token;
+
+            try
+            {
+                ch.Moving = true;
+                ApplyUiState(ch);
+                SetStatus(ch, $"PID auto tune {ch.Axis}: {testRpm} RPM, +/-{relayAmplitudeDeg:F2} deg");
+
+                await ch.Drive.SetOperationModeAsync(3, tuneCt).ConfigureAwait(true);
+                await ch.Drive.SetControlWordAsync(0x000F, tuneCt).ConfigureAwait(true);
+                await SendSpeedRpmAsync(ch, testRpm, settings, rampToTarget: true, tuneCt).ConfigureAwait(true);
+
+                while (!tuneCt.IsCancellationRequested)
+                {
+                    if (DateTime.UtcNow - startedUtc > timeout)
+                    {
+                        return new PidAutoTuneResult
+                        {
+                            Axis = ch.Axis,
+                            Success = false,
+                            Message = "PID auto tune timeout before enough oscillation data was collected.",
+                            SwitchCount = switchTimes.Count
+                        };
+                    }
+
+                    if (!TryGetEncoderDeg(ch, out var currentDegDouble))
+                    {
+                        return new PidAutoTuneResult
+                        {
+                            Axis = ch.Axis,
+                            Success = false,
+                            Message = "Encoder read failed during PID auto tune.",
+                            SwitchCount = switchTimes.Count
+                        };
+                    }
+
+                    float currentDeg = (float)currentDegDouble;
+                    minDeg = Math.Min(minDeg, currentDeg);
+                    maxDeg = Math.Max(maxDeg, currentDeg);
+
+                    if (currentDeg < lowLimitDeg || currentDeg > highLimitDeg)
+                    {
+                        return new PidAutoTuneResult
+                        {
+                            Axis = ch.Axis,
+                            Success = false,
+                            Message = $"PID auto tune stopped: travel exceeded +/-{maxTravelDeg:F2} deg safety limit.",
+                            SwitchCount = switchTimes.Count
+                        };
+                    }
+
+                    bool switchDirection =
+                        direction > 0 && currentDeg >= targetDeg + relayAmplitudeDeg ||
+                        direction < 0 && currentDeg <= targetDeg - relayAmplitudeDeg;
+
+                    if (switchDirection)
+                    {
+                        direction *= -1;
+                        switchTimes.Add(DateTime.UtcNow);
+                        await SendSpeedRpmAsync(ch, direction * testRpm, settings, rampToTarget: false, tuneCt).ConfigureAwait(true);
+                        SetStatus(ch, $"PID auto tune {ch.Axis}: switch {switchTimes.Count}/{requiredSwitches}");
+
+                        if (switchTimes.Count >= requiredSwitches)
+                        {
+                            break;
+                        }
+                    }
+
+                    await Task.Delay(sampleIntervalMs, tuneCt).ConfigureAwait(true);
+                }
+
+                var result = CalculateAutoTuneResult(ch.Axis, testRpm, minDeg, maxDeg, switchTimes);
+                SetStatus(ch, result.Success
+                    ? $"PID tune OK: Kp={result.Kp:F3}, Ki={result.Ki:F3}, Kd={result.Kd:F3}"
+                    : result.Message);
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                return new PidAutoTuneResult
+                {
+                    Axis = ch.Axis,
+                    Success = false,
+                    Message = "PID auto tune cancelled.",
+                    SwitchCount = switchTimes.Count
+                };
+            }
+            finally
+            {
+                try
+                {
+                    await SendSpeedRpmAsync(ch, 0, settings, rampToTarget: true, CancellationToken.None).ConfigureAwait(true);
+                }
+                catch
+                {
+                    // Best effort stop; status above reports the tune outcome.
+                }
+
+                ch.Moving = false;
+                ResetPid(ch);
+                ApplyUiState(ch);
+            }
+        }
+
+        private static PidAutoTuneResult CalculateAutoTuneResult(Axis axis, int testRpm, float minDeg, float maxDeg,
+            System.Collections.Generic.IReadOnlyList<DateTime> switchTimes)
+        {
+            float oscillationAmplitudeDeg = Math.Abs(maxDeg - minDeg) / 2f;
+            if (switchTimes.Count < 6 || oscillationAmplitudeDeg <= 0.001f)
+            {
+                return new PidAutoTuneResult
+                {
+                    Axis = axis,
+                    Success = false,
+                    Message = "PID auto tune did not detect a stable oscillation.",
+                    OscillationAmplitudeDeg = oscillationAmplitudeDeg,
+                    SwitchCount = switchTimes.Count
+                };
+            }
+
+            double periodTotalSec = 0;
+            int periodCount = 0;
+            for (int i = 2; i < switchTimes.Count; i++)
+            {
+                periodTotalSec += (switchTimes[i] - switchTimes[i - 2]).TotalSeconds;
+                periodCount++;
+            }
+
+            float tuSec = (float)(periodTotalSec / Math.Max(1, periodCount));
+            float ku = (float)(4.0 * testRpm / (Math.PI * oscillationAmplitudeDeg));
+
+            float kp = 0.6f * ku;
+            float ki = tuSec > 0 ? 1.2f * ku / tuSec : 0f;
+            float kd = 0.075f * ku * tuSec;
+
+            return new PidAutoTuneResult
+            {
+                Axis = axis,
+                Success = true,
+                Message = "PID auto tune completed. Review the suggested values before saving them.",
+                Kp = kp,
+                Ki = ki,
+                Kd = kd,
+                UltimateGain = ku,
+                UltimatePeriodSec = tuSec,
+                OscillationAmplitudeDeg = oscillationAmplitudeDeg,
+                SwitchCount = switchTimes.Count
+            };
+        }
+
         private MotionParameters GetMotionParameters()
         {
             MotionParameters settings;
@@ -486,10 +712,20 @@ namespace AntenControl
                 Acceleration = Math.Max(0f, settings.Acceleration),
                 Deceleration = Math.Max(0f, settings.Deceleration),
                 TrackingMinRpm = Math.Max(1, settings.TrackingMinRpm),
-                PidKp = Math.Max(0f, settings.PidKp),
-                PidKi = Math.Max(0f, settings.PidKi),
-                PidKd = Math.Max(0f, settings.PidKd)
+                AziPidKp = Math.Max(0f, settings.AziPidKp),
+                AziPidKi = Math.Max(0f, settings.AziPidKi),
+                AziPidKd = Math.Max(0f, settings.AziPidKd),
+                ElePidKp = Math.Max(0f, settings.ElePidKp),
+                ElePidKi = Math.Max(0f, settings.ElePidKi),
+                ElePidKd = Math.Max(0f, settings.ElePidKd)
             };
+        }
+
+        private static (float Kp, float Ki, float Kd) GetPidParameters(Axis axis, MotionParameters settings)
+        {
+            return axis == Axis.Azimuth
+                ? (settings.AziPidKp, settings.AziPidKi, settings.AziPidKd)
+                : (settings.ElePidKp, settings.ElePidKi, settings.ElePidKd);
         }
 
         private static int ClampTargetRpm(int rpmSigned, MotionParameters settings)
@@ -570,10 +806,11 @@ namespace AntenControl
             ch.LastErrorDeg = errDeg;
             ch.LastPidUtc = now;
 
+            var pid = GetPidParameters(ch.Axis, settings);
             float outputRpm =
-                settings.PidKp * errDeg +
-                settings.PidKi * ch.IntegralErrorDegSec +
-                settings.PidKd * derivativeDegPerSec;
+                pid.Kp * errDeg +
+                pid.Ki * ch.IntegralErrorDegSec +
+                pid.Kd * derivativeDegPerSec;
 
             int maxRpm = Math.Max(1, settings.MaxRpm);
             int minRpm = Math.Min(Math.Max(1, settings.TrackingMinRpm), maxRpm);

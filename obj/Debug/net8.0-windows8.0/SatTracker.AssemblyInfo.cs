@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SatTracker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c0016dab6da6732bdafc45ae39acf861080b73c2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3b53c83ef6f2d6279cb1a0354c3f1dfd55b006d1")]
 [assembly: System.Reflection.AssemblyProductAttribute("SatTracker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SatTracker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

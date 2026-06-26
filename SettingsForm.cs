@@ -23,6 +23,10 @@ namespace SatTracker
         private readonly List<Button> _eleJogButtons = new();
         private Button? _btnSetAziHome;
         private Button? _btnSetEleHome;
+        private Button? _btnTuneAziPid;
+        private Button? _btnTuneElePid;
+        private Label? _lblPidTuneStatus;
+        private bool _pidAutoTuneBusy;
 
         public SettingsForm()
             : this(null)
@@ -198,9 +202,31 @@ namespace SatTracker
         private TabPage CreatePidPage()
         {
             var page = CreatePage("PID");
-            AddNumberBox(page, "PidKp", "Kp", 20, 0, 100000, 24, 4);
-            AddNumberBox(page, "PidKi", "Ki", 0, 0, 100000, 72, 4);
-            AddNumberBox(page, "PidKd", "Kd", 0, 0, 100000, 120, 4);
+            page.Controls.Add(CreateSectionLabel("Azimuth PID", 24));
+            AddNumberBox(page, "AziPidKp", "Azimuth Kp", 20, 0, 100000, 64, 4);
+            AddNumberBox(page, "AziPidKi", "Azimuth Ki", 0, 0, 100000, 112, 4);
+            AddNumberBox(page, "AziPidKd", "Azimuth Kd", 0, 0, 100000, 160, 4);
+            _btnTuneAziPid = CreateAutoTuneButton(64, Manual_Control.Axis.Azimuth);
+            page.Controls.Add(_btnTuneAziPid);
+
+            page.Controls.Add(CreateSectionLabel("Elevation PID", 232));
+            AddNumberBox(page, "ElePidKp", "Elevation Kp", 20, 0, 100000, 272, 4);
+            AddNumberBox(page, "ElePidKi", "Elevation Ki", 0, 0, 100000, 320, 4);
+            AddNumberBox(page, "ElePidKd", "Elevation Kd", 0, 0, 100000, 368, 4);
+            _btnTuneElePid = CreateAutoTuneButton(272, Manual_Control.Axis.Elevation);
+            page.Controls.Add(_btnTuneElePid);
+
+            _lblPidTuneStatus = new Label
+            {
+                Text = "Auto tune status: idle",
+                AutoSize = false,
+                BorderStyle = BorderStyle.FixedSingle,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Width = 546,
+                Height = 56,
+                Location = new Point(24, 440)
+            };
+            page.Controls.Add(_lblPidTuneStatus);
             return page;
         }
 
@@ -250,12 +276,41 @@ namespace SatTracker
             parent.Controls.Add(input);
         }
 
+        private Button CreateAutoTuneButton(int top, Manual_Control.Axis axis)
+        {
+            var button = new Button
+            {
+                Text = "Auto Tune",
+                Width = 120,
+                Height = 30,
+                Location = new Point(450, top - 3),
+                Enabled = _mainForm != null
+            };
+
+            button.Click += async (_, __) => await RunPidAutoTuneAsync(axis);
+            return button;
+        }
+
         private static Label CreateLabel(string text, int top)
         {
             return new Label
             {
                 Text = text,
                 AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Width = 220,
+                Height = 26,
+                Location = new Point(24, top)
+            };
+        }
+
+        private static Label CreateSectionLabel(string text, int top)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = false,
+                Font = new Font(SystemFonts.DefaultFont, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Width = 220,
                 Height = 26,
@@ -351,6 +406,72 @@ namespace SatTracker
             foreach (var button in _eleJogButtons) button.Enabled = eleServoReady;
             if (_btnSetAziHome != null) _btnSetAziHome.Enabled = aziEncoderReady;
             if (_btnSetEleHome != null) _btnSetEleHome.Enabled = eleEncoderReady;
+            if (_btnTuneAziPid != null) _btnTuneAziPid.Enabled = !_pidAutoTuneBusy && aziServoReady && aziEncoderReady;
+            if (_btnTuneElePid != null) _btnTuneElePid.Enabled = !_pidAutoTuneBusy && eleServoReady && eleEncoderReady;
+        }
+
+        private async Task RunPidAutoTuneAsync(Manual_Control.Axis axis)
+        {
+            if (_mainForm == null || _pidAutoTuneBusy) return;
+
+            string axisName = axis == Manual_Control.Axis.Azimuth ? "Azimuth" : "Elevation";
+            var confirm = MessageBox.Show(
+                $"Auto Tune PID {axisName} will move the antenna around the current position. Make sure the axis has enough free travel.",
+                "PID Auto Tune",
+                MessageBoxButtons.OKCancel,
+                MessageBoxIcon.Warning);
+            if (confirm != DialogResult.OK) return;
+
+            _pidAutoTuneBusy = true;
+            RefreshHomeReadout();
+            if (_lblPidTuneStatus != null) _lblPidTuneStatus.Text = $"Auto tune {axisName}: running...";
+
+            try
+            {
+                var result = await _mainForm.AutoTunePidAsync(axis);
+                if (result.Success)
+                {
+                    ApplyPidTuneResult(result);
+                    if (_lblPidTuneStatus != null)
+                    {
+                        _lblPidTuneStatus.Text =
+                            $"{axisName}: Kp={result.Kp:F4}, Ki={result.Ki:F4}, Kd={result.Kd:F4}; Tu={result.UltimatePeriodSec:F3}s, Amp={result.OscillationAmplitudeDeg:F3}deg";
+                    }
+                }
+                else
+                {
+                    if (_lblPidTuneStatus != null) _lblPidTuneStatus.Text = $"{axisName}: {result.Message}";
+                    MessageBox.Show(result.Message, "PID Auto Tune", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_lblPidTuneStatus != null) _lblPidTuneStatus.Text = $"{axisName}: auto tune failed.";
+                MessageBox.Show($"PID auto tune failed: {ex.Message}", "PID Auto Tune",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _pidAutoTuneBusy = false;
+                RefreshHomeReadout();
+            }
+        }
+
+        private void ApplyPidTuneResult(Manual_Control.PidAutoTuneResult result)
+        {
+            string prefix = result.Axis == Manual_Control.Axis.Azimuth ? "Azi" : "Ele";
+            SetNumberInput($"{prefix}PidKp", result.Kp);
+            SetNumberInput($"{prefix}PidKi", result.Ki);
+            SetNumberInput($"{prefix}PidKd", result.Kd);
+        }
+
+        private void SetNumberInput(string key, float value)
+        {
+            if (_inputs.TryGetValue(key, out var control) && control is NumericUpDown numberBox)
+            {
+                decimal decimalValue = (decimal)Math.Clamp(value, (float)numberBox.Minimum, (float)numberBox.Maximum);
+                numberBox.Value = decimal.Round(decimalValue, numberBox.DecimalPlaces);
+            }
         }
 
         private void LoadSettings()
@@ -358,6 +479,10 @@ namespace SatTracker
             foreach (var (key, control) in _inputs)
             {
                 string? value = ConfigurationManager.AppSettings[key];
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    value = ConfigurationManager.AppSettings[GetLegacyPidKey(key)];
+                }
                 if (string.IsNullOrWhiteSpace(value)) continue;
 
                 if (control is TextBox textBox)
@@ -370,6 +495,17 @@ namespace SatTracker
                     numberBox.Value = Math.Clamp(parsed, numberBox.Minimum, numberBox.Maximum);
                 }
             }
+        }
+
+        private static string GetLegacyPidKey(string key)
+        {
+            return key switch
+            {
+                "AziPidKp" or "ElePidKp" => "PidKp",
+                "AziPidKi" or "ElePidKi" => "PidKi",
+                "AziPidKd" or "ElePidKd" => "PidKd",
+                _ => string.Empty
+            };
         }
 
         private bool SaveSettings()

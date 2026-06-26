@@ -7,6 +7,10 @@
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:antencontrol\\manual_control.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
@@ -17,14 +21,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\absoluteencoder\\absolute_encoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:absoluteencoder\\absolute_encoder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\kincoservo\\kincoservodrive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -62,19 +58,18 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "KincoServoDrive.cs",
-              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\KincoServo\\KincoServoDrive.cs",
-              "RelativeDocumentMoniker": "KincoServo\\KincoServoDrive.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\KincoServo\\KincoServoDrive.cs",
-              "RelativeToolTip": "KincoServo\\KincoServoDrive.cs",
-              "ViewState": "AgIAACUAAAAAAAAAAAAcwC8AAAAqAAAAAAAAAA==",
+              "DocumentIndex": 2,
+              "Title": "SettingsForm.cs [Design]",
+              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
+              "RelativeDocumentMoniker": "SettingsForm.cs",
+              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs [Design]",
+              "RelativeToolTip": "SettingsForm.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-14T16:37:01.477Z"
+              "WhenOpened": "2026-06-25T10:30:35.242Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 8,
               "Title": "ModbusRtuPort.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\Modbus\\ModbusRtuPort.cs",
               "RelativeDocumentMoniker": "Modbus\\ModbusRtuPort.cs",
@@ -86,7 +81,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "MainForm.cs [Design]",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs",
               "RelativeDocumentMoniker": "MainForm.cs",
@@ -97,7 +92,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "MainForm.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs",
               "RelativeDocumentMoniker": "MainForm.cs",
@@ -115,49 +110,38 @@
               "RelativeDocumentMoniker": "AntenControl\\Manual_Control.cs",
               "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\AntenControl\\Manual_Control.cs",
               "RelativeToolTip": "AntenControl\\Manual_Control.cs",
-              "ViewState": "AgIAAOIBAAAAAAAAAAAYwPUBAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAALkCAAAAAAAAAAAgwKoCAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-13T10:11:57.165Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "Absolute_Encoder.cs",
-              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\AbsoluteEncoder\\Absolute_Encoder.cs",
-              "RelativeDocumentMoniker": "AbsoluteEncoder\\Absolute_Encoder.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\AbsoluteEncoder\\Absolute_Encoder.cs",
-              "RelativeToolTip": "AbsoluteEncoder\\Absolute_Encoder.cs",
-              "ViewState": "AgIAAJMAAAAAAAAAAAAAwEQAAAAgAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-13T11:20:27.87Z"
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "SettingsForm.cs [Design]",
-              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
-              "RelativeDocumentMoniker": "SettingsForm.cs",
-              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs [Design]",
-              "RelativeToolTip": "SettingsForm.cs [Design]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-21T15:17:51.363Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
               "Title": "SettingsForm.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
               "RelativeDocumentMoniker": "SettingsForm.cs",
               "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SettingsForm.cs",
               "RelativeToolTip": "SettingsForm.cs",
-              "ViewState": "AgIAAGQBAAAAAAAAAAAmwHIBAAANAAAAAAAAAA==",
+              "ViewState": "AgIAACEBAAAAAAAAAAAmwNAAAABRAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-21T15:18:13.425Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 5,
+              "Title": "KincoServoDrive.cs",
+              "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\KincoServo\\KincoServoDrive.cs",
+              "RelativeDocumentMoniker": "KincoServo\\KincoServoDrive.cs",
+              "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\KincoServo\\KincoServoDrive.cs",
+              "RelativeToolTip": "KincoServo\\KincoServoDrive.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAcwC8AAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-14T16:37:01.477Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "SatTracker.csproj",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\SatTracker.csproj",
               "RelativeDocumentMoniker": "SatTracker.csproj",
@@ -169,7 +153,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 7,
               "Title": "MainForm.Designer.cs",
               "DocumentMoniker": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.Designer.cs",
               "RelativeDocumentMoniker": "MainForm.Designer.cs",

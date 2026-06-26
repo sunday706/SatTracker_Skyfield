@@ -127,6 +127,16 @@ namespace SatTracker
             }
             return defaultValue;
         }
+        private float GetFloatSetting(string name, string fallbackName, float defaultValue)
+        {
+            var strValue = ConfigurationManager.AppSettings[name];
+            if (float.TryParse(strValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var result))
+            {
+                return result;
+            }
+
+            return GetFloatSetting(fallbackName, defaultValue);
+        }
         private Manual_Control.MotionParameters GetMotionParameters()
         {
             return new Manual_Control.MotionParameters
@@ -136,9 +146,12 @@ namespace SatTracker
                 Acceleration = Math.Max(0f, GetFloatSetting("Acceleration", 100)),
                 Deceleration = Math.Max(0f, GetFloatSetting("Deceleration", 100)),
                 TrackingMinRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30)),
-                PidKp = Math.Max(0f, GetFloatSetting("PidKp", 25)),
-                PidKi = Math.Max(0f, GetFloatSetting("PidKi", 0.5f)),
-                PidKd = Math.Max(0f, GetFloatSetting("PidKd", 0.01f))
+                AziPidKp = Math.Max(0f, GetFloatSetting("AziPidKp", "PidKp", 25)),
+                AziPidKi = Math.Max(0f, GetFloatSetting("AziPidKi", "PidKi", 0.5f)),
+                AziPidKd = Math.Max(0f, GetFloatSetting("AziPidKd", "PidKd", 0.01f)),
+                ElePidKp = Math.Max(0f, GetFloatSetting("ElePidKp", "PidKp", 25)),
+                ElePidKi = Math.Max(0f, GetFloatSetting("ElePidKi", "PidKi", 0.5f)),
+                ElePidKd = Math.Max(0f, GetFloatSetting("ElePidKd", "PidKd", 0.01f))
             };
         }
         private void SaveSetting(string key, object value)
@@ -672,6 +685,35 @@ namespace SatTracker
         public void StopSettingsJog(Manual_Control.Axis axis)
         {
             _ = _manual?.StopManualMoveAsync(axis);
+        }
+
+        public async Task<Manual_Control.PidAutoTuneResult> AutoTunePidAsync(Manual_Control.Axis axis)
+        {
+            if (_manual == null)
+            {
+                return new Manual_Control.PidAutoTuneResult
+                {
+                    Axis = axis,
+                    Success = false,
+                    Message = "Manual controller is not initialized."
+                };
+            }
+
+            if (_controlMode == ControlMode.Tracking)
+            {
+                return new Manual_Control.PidAutoTuneResult
+                {
+                    Axis = axis,
+                    Success = false,
+                    Message = "Stop tracking before PID auto tune."
+                };
+            }
+
+            Manual_Control.Axis otherAxis = axis == Manual_Control.Axis.Azimuth
+                ? Manual_Control.Axis.Elevation
+                : Manual_Control.Axis.Azimuth;
+            await _manual.StopManualMoveAsync(otherAxis);
+            return await _manual.AutoTunePidAsync(axis);
         }
 
         // Hàm để thay đổi đường dẫn file TLE (gọi từ UI hoặc logic khác)
