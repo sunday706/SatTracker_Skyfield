@@ -117,6 +117,11 @@ namespace SatTracker
             }
             return result;
         }
+        private bool GetBoolSetting(string name, bool defaultValue)
+        {
+            var strValue = ConfigurationManager.AppSettings[name];
+            return bool.TryParse(strValue, out var result) ? result : defaultValue;
+        }
         private double GetDoubleSetting(string name, double defaultValue)
         {
             var strValue = ConfigurationManager.AppSettings[name];
@@ -148,6 +153,7 @@ namespace SatTracker
                 TrackingMinRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30)),
                 GoToleranceDeg = Math.Max(0.01f, GetFloatSetting("GoToleranceDeg", "TrackingToleranceDeg", 0.2f)),
                 GoTimeoutSec = Math.Max(1, GetIntSetting("GoTimeoutSec", 60)),
+                IgnoreModbusTimeoutErrors = GetBoolSetting("IgnoreModbusTimeoutErrors", false),
                 AziPidKp = Math.Max(0f, GetFloatSetting("AziPidKp", "PidKp", 25)),
                 AziPidKi = Math.Max(0f, GetFloatSetting("AziPidKi", "PidKi", 0.5f)),
                 AziPidKd = Math.Max(0f, GetFloatSetting("AziPidKd", "PidKd", 0.01f)),

@@ -39,6 +39,7 @@ namespace AntenControl
             public int TrackingMinRpm { get; init; } = 30;
             public float GoToleranceDeg { get; init; } = 0.2f;
             public int GoTimeoutSec { get; init; } = 60;
+            public bool IgnoreModbusTimeoutErrors { get; init; }
             public float AziPidKp { get; init; } = 20f;
             public float AziPidKi { get; init; }
             public float AziPidKd { get; init; }
@@ -739,6 +740,7 @@ namespace AntenControl
                 TrackingMinRpm = Math.Max(1, settings.TrackingMinRpm),
                 GoToleranceDeg = Math.Clamp(settings.GoToleranceDeg, 0.01f, 10f),
                 GoTimeoutSec = Math.Clamp(settings.GoTimeoutSec, 1, 3600),
+                IgnoreModbusTimeoutErrors = settings.IgnoreModbusTimeoutErrors,
                 AziPidKp = Math.Max(0f, settings.AziPidKp),
                 AziPidKi = Math.Max(0f, settings.AziPidKi),
                 AziPidKd = Math.Max(0f, settings.AziPidKd),
@@ -795,7 +797,16 @@ namespace AntenControl
             do
             {
                 int nextRpm = ApplyRampLimit(ch, targetRpm, settings);
-                await ch.Drive!.SetTargetSpeedRpmAsync(nextRpm, ct).ConfigureAwait(true);
+                try
+                {
+                    await ch.Drive!.SetTargetSpeedRpmAsync(nextRpm, ct).ConfigureAwait(true);
+                }
+                catch (Exception ex) when (ShouldIgnoreTransientModbusError(settings, ex))
+                {
+                    SetStatus(ch, $"Modbus timeout ignored; keep last RPM {ch.CommandedRpm}.");
+                    return ch.CommandedRpm;
+                }
+
                 ch.CommandedRpm = nextRpm;
                 ch.LastSpeedCommandUtc = DateTime.UtcNow;
 
@@ -805,6 +816,25 @@ namespace AntenControl
             while (!ct.IsCancellationRequested);
 
             return ch.CommandedRpm;
+        }
+
+        private static bool ShouldIgnoreTransientModbusError(MotionParameters settings, Exception ex)
+        {
+            return settings.IgnoreModbusTimeoutErrors && IsTransientModbusError(ex);
+        }
+
+        private static bool IsTransientModbusError(Exception ex)
+        {
+            if (ex is TimeoutException) return true;
+
+            string message = ex.Message;
+            return message.Contains("No Modbus response", StringComparison.OrdinalIgnoreCase) ||
+                   message.Contains("Modbus timeout", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void SetIgnoredModbusStatus(AxisChannel ch, Exception ex)
+        {
+            SetStatus(ch, $"Ignored Modbus timeout; using last valid command. {ex.Message}");
         }
 
         private void ResetPid(AxisChannel ch)
@@ -903,8 +933,16 @@ namespace AntenControl
             try
             {
                 // Đảm bảo động cơ ở Speed mode + Enabled
-                await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
-                await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
+                try
+                {
+                    await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
+                    await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
+                }
+                catch (Exception ex) when (ShouldIgnoreTransientModbusError(settings, ex))
+                {
+                    SetIgnoredModbusStatus(ch, ex);
+                    return;
+                }
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -999,8 +1037,17 @@ namespace AntenControl
             MotionParameters settings = GetMotionParameters();
             int speedRpm = CalculatePidSpeedRpm(ch, errDeg, settings);
 
-            await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
-            await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
+            try
+            {
+                await ch.Drive.SetOperationModeAsync(3, ct).ConfigureAwait(true);
+                await ch.Drive.SetControlWordAsync(0x000F, ct).ConfigureAwait(true);
+            }
+            catch (Exception ex) when (ShouldIgnoreTransientModbusError(settings, ex))
+            {
+                SetIgnoredModbusStatus(ch, ex);
+                return;
+            }
+
             await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
 
             ch.Moving = true;

@@ -107,6 +107,7 @@ namespace SatTracker
             AddTextBox(page, "EncoderCom", "COM Encoder", "COM3", 120);
             AddNumberBox(page, "ModbusBaud", "Baudrate Servo Modbus", 19200, 1200, 1000000, 168, 0);
             AddNumberBox(page, "EncoderBaud", "Baudrate Encoder", 115200, 1200, 1000000, 216, 0);
+            AddCheckBox(page, "IgnoreModbusTimeoutErrors", "Ignore transient Modbus timeout", false, 264);
             return page;
         }
 
@@ -280,6 +281,23 @@ namespace SatTracker
 
             _inputs[key] = input;
             parent.Controls.Add(lbl);
+            parent.Controls.Add(input);
+        }
+
+        private void AddCheckBox(Control parent, string key, string label, bool defaultValue, int top)
+        {
+            var input = new CheckBox
+            {
+                Name = key,
+                Text = label,
+                Checked = defaultValue,
+                AutoSize = false,
+                Width = 360,
+                Height = 26,
+                Location = new Point(250, top - 3)
+            };
+
+            _inputs[key] = input;
             parent.Controls.Add(input);
         }
 
@@ -515,6 +533,11 @@ namespace SatTracker
                 {
                     numberBox.Value = Math.Clamp(parsed, numberBox.Minimum, numberBox.Maximum);
                 }
+                else if (control is CheckBox checkBox &&
+                         bool.TryParse(value, out var checkedValue))
+                {
+                    checkBox.Checked = checkedValue;
+                }
             }
         }
 
@@ -541,6 +564,7 @@ namespace SatTracker
                     {
                         TextBox textBox => textBox.Text.Trim(),
                         NumericUpDown numberBox => numberBox.Value.ToString(CultureInfo.InvariantCulture),
+                        CheckBox checkBox => checkBox.Checked.ToString(CultureInfo.InvariantCulture),
                         _ => string.Empty
                     };
 
