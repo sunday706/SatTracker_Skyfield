@@ -7,7 +7,7 @@
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:antencontrol\\manual_control.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|d:\\satellite_anten_ctrl\\sattracker_skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "AbsoluteMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{9FDB546C-C560-457F-930E-6D1C4AFBEB6B}|SatTracker.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
@@ -88,8 +88,7 @@
               "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\MainForm.cs [Design]",
               "RelativeToolTip": "MainForm.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-14T08:38:48.02Z",
-              "EditorCaption": " [Design]"
+              "WhenOpened": "2025-12-14T08:38:48.02Z"
             },
             {
               "$type": "Document",
@@ -111,7 +110,7 @@
               "RelativeDocumentMoniker": "AntenControl\\Manual_Control.cs",
               "ToolTip": "D:\\Satellite_Anten_CTRL\\SatTracker_Skyfield\\AntenControl\\Manual_Control.cs",
               "RelativeToolTip": "AntenControl\\Manual_Control.cs",
-              "ViewState": "AgIAAGACAAAAAAAAAAAgwGwCAAAVAAAAAAAAAA==",
+              "ViewState": "AgIAAGACAAAAAAAAAAAgwG0CAAAvAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-13T10:11:57.165Z",
               "EditorCaption": ""
@@ -162,8 +161,7 @@
               "RelativeToolTip": "MainForm.Designer.cs",
               "ViewState": "AgIAABIAAAAAAAAAAAAqwA4AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-11T01:21:22.624Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-11T01:21:22.624Z"
             }
           ]
         }

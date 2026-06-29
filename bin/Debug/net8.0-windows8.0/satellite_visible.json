@@ -1,137 +1,137 @@
 [
   {
+    "Name": "VNREDSat-1",
+    "StartTimeVisible": "2026-06-30T07:58:08.685497+07:00",
+    "EndTimeVisible": "2026-06-30T08:08:35.884147+07:00"
+  },
+  {
+    "Name": "SPOT 7",
+    "StartTimeVisible": "2026-06-30T08:12:06.156835+07:00",
+    "EndTimeVisible": "2026-06-30T08:18:38.528152+07:00"
+  },
+  {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-06-29T22:47:16.691367+07:00",
-    "EndTimeVisible": "2026-06-29T22:58:15.512497+07:00"
+    "StartTimeVisible": "2026-06-30T09:17:52.448888+07:00",
+    "EndTimeVisible": "2026-06-30T09:30:47.814708+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-06-30T07:58:08.682399+07:00",
-    "EndTimeVisible": "2026-06-30T08:08:35.894326+07:00"
+    "StartTimeVisible": "2026-06-30T09:33:57.506417+07:00",
+    "EndTimeVisible": "2026-06-30T09:47:16.582872+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-06-30T08:12:06.228812+07:00",
-    "EndTimeVisible": "2026-06-30T08:18:38.515962+07:00"
+    "StartTimeVisible": "2026-06-30T09:46:10.737765+07:00",
+    "EndTimeVisible": "2026-06-30T10:00:02.247035+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-06-30T09:17:52.519336+07:00",
-    "EndTimeVisible": "2026-06-30T09:30:47.812858+07:00"
+    "StartTimeVisible": "2026-06-30T10:55:36.243676+07:00",
+    "EndTimeVisible": "2026-06-30T11:07:51.507924+07:00"
+  },
+  {
+    "Name": "SPOT 7",
+    "StartTimeVisible": "2026-06-30T11:26:18.411073+07:00",
+    "EndTimeVisible": "2026-06-30T11:33:30.782818+07:00"
+  },
+  {
+    "Name": "SPOT 6",
+    "StartTimeVisible": "2026-06-30T20:14:22.078045+07:00",
+    "EndTimeVisible": "2026-06-30T20:23:46.153440+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-06-30T09:33:57.516596+07:00",
-    "EndTimeVisible": "2026-06-30T09:47:16.640485+07:00"
+    "StartTimeVisible": "2026-06-30T20:25:16.852968+07:00",
+    "EndTimeVisible": "2026-06-30T20:38:43.199993+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-06-30T09:46:10.749594+07:00",
-    "EndTimeVisible": "2026-06-30T10:00:02.235367+07:00"
+    "StartTimeVisible": "2026-06-30T20:40:09.167058+07:00",
+    "EndTimeVisible": "2026-06-30T20:52:59.650065+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-06-30T10:55:36.266569+07:00",
-    "EndTimeVisible": "2026-06-30T11:07:51.530817+07:00"
-  },
-  {
-    "Name": "SPOT 7",
-    "StartTimeVisible": "2026-06-30T11:26:18.423988+07:00",
-    "EndTimeVisible": "2026-06-30T11:33:30.713416+07:00"
-  },
-  {
-    "Name": "SPOT 6",
-    "StartTimeVisible": "2026-06-30T20:14:21.958874+07:00",
-    "EndTimeVisible": "2026-06-30T20:23:46.151710+07:00"
+    "StartTimeVisible": "2026-06-30T21:49:13.740957+07:00",
+    "EndTimeVisible": "2026-06-30T22:03:04.112635+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-06-30T20:25:16.859929+07:00",
-    "EndTimeVisible": "2026-06-30T20:38:43.212183+07:00"
+    "StartTimeVisible": "2026-06-30T22:04:25.819695+07:00",
+    "EndTimeVisible": "2026-06-30T22:14:09.707817+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-06-30T20:40:09.097736+07:00",
-    "EndTimeVisible": "2026-06-30T20:52:59.645035+07:00"
+    "StartTimeVisible": "2026-06-30T22:17:54.768838+07:00",
+    "EndTimeVisible": "2026-06-30T22:30:00.384817+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-06-30T21:49:13.739186+07:00",
-    "EndTimeVisible": "2026-06-30T22:03:03.974595+07:00"
+    "StartTimeVisible": "2026-07-01T08:24:35.107952+07:00",
+    "EndTimeVisible": "2026-07-01T08:30:34.887252+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-06-30T22:04:25.807303+07:00",
-    "EndTimeVisible": "2026-06-30T22:14:09.706892+07:00"
+    "StartTimeVisible": "2026-07-01T08:31:31.350555+07:00",
+    "EndTimeVisible": "2026-07-01T08:44:27.808262+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-06-30T22:17:54.758337+07:00",
-    "EndTimeVisible": "2026-06-30T22:30:00.376127+07:00"
+    "StartTimeVisible": "2026-07-01T08:48:43.460989+07:00",
+    "EndTimeVisible": "2026-07-01T09:00:38.452243+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-07-01T08:24:35.130966+07:00",
-    "EndTimeVisible": "2026-07-01T08:30:34.885240+07:00"
+    "StartTimeVisible": "2026-07-01T09:58:29.733475+07:00",
+    "EndTimeVisible": "2026-07-01T10:12:25.769978+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-07-01T08:31:31.349549+07:00",
-    "EndTimeVisible": "2026-07-01T08:44:27.795106+07:00"
+    "StartTimeVisible": "2026-07-01T10:09:07.879802+07:00",
+    "EndTimeVisible": "2026-07-01T10:20:43.080216+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-07-01T08:48:43.452339+07:00",
-    "EndTimeVisible": "2026-07-01T09:00:38.455462+07:00"
+    "StartTimeVisible": "2026-07-01T10:25:36.016306+07:00",
+    "EndTimeVisible": "2026-07-01T10:38:35.157845+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-07-01T09:58:29.731544+07:00",
-    "EndTimeVisible": "2026-07-01T10:12:25.768208+07:00"
+    "StartTimeVisible": "2026-07-01T11:38:31.823229+07:00",
+    "EndTimeVisible": "2026-07-01T11:46:18.020056+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-07-01T10:09:07.866807+07:00",
-    "EndTimeVisible": "2026-07-01T10:20:43.062674+07:00"
+    "StartTimeVisible": "2026-07-01T19:25:03.896584+07:00",
+    "EndTimeVisible": "2026-07-01T19:34:26.469353+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-07-01T10:25:36.019444+07:00",
-    "EndTimeVisible": "2026-07-01T10:38:35.168104+07:00"
+    "StartTimeVisible": "2026-07-01T19:45:28.191131+07:00",
+    "EndTimeVisible": "2026-07-01T19:52:05.119012+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-07-01T11:38:31.821539+07:00",
-    "EndTimeVisible": "2026-07-01T11:46:17.900966+07:00"
+    "StartTimeVisible": "2026-07-01T20:53:23.275444+07:00",
+    "EndTimeVisible": "2026-07-01T21:06:14.436661+07:00"
   },
   {
     "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-07-01T19:25:03.813060+07:00",
-    "EndTimeVisible": "2026-07-01T19:34:26.479934+07:00"
+    "StartTimeVisible": "2026-07-01T20:59:40.563360+07:00",
+    "EndTimeVisible": "2026-07-01T21:13:13.835714+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-07-01T19:45:28.201430+07:00",
-    "EndTimeVisible": "2026-07-01T19:52:05.140295+07:00"
+    "StartTimeVisible": "2026-07-01T21:18:37.738121+07:00",
+    "EndTimeVisible": "2026-07-01T21:32:27.772002+07:00"
   },
   {
     "Name": "SPOT 6",
-    "StartTimeVisible": "2026-07-01T20:53:23.298377+07:00",
-    "EndTimeVisible": "2026-07-01T21:06:14.434730+07:00"
-  },
-  {
-    "Name": "VNREDSat-1",
-    "StartTimeVisible": "2026-07-01T20:59:40.573901+07:00",
-    "EndTimeVisible": "2026-07-01T21:13:13.831248+07:00"
+    "StartTimeVisible": "2026-07-01T22:31:10.862568+07:00",
+    "EndTimeVisible": "2026-07-01T22:43:26.571070+07:00"
   },
   {
     "Name": "SPOT 7",
-    "StartTimeVisible": "2026-07-01T21:18:37.758680+07:00",
-    "EndTimeVisible": "2026-07-01T21:32:27.765725+07:00"
-  },
-  {
-    "Name": "SPOT 6",
-    "StartTimeVisible": "2026-07-01T22:31:10.860758+07:00",
-    "EndTimeVisible": "2026-07-01T22:43:26.563547+07:00"
+    "StartTimeVisible": "2026-07-01T22:59:41.249268+07:00",
+    "EndTimeVisible": "2026-07-01T23:06:50.133644+07:00"
   }
 ]
