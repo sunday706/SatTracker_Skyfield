@@ -196,6 +196,8 @@ namespace SatTracker
             AddNumberBox(page, "Acceleration", "Acceleration", 100, 0, 100000, 120, 3);
             AddNumberBox(page, "Deceleration", "Deceleration", 100, 0, 100000, 168, 3);
             AddNumberBox(page, "TrackingMinElevationDeg", "Tracking Elevation Min (deg)", 10, -90, 180, 216, 3);
+            AddNumberBox(page, "GoToleranceDeg", "GO Tolerance (deg)", 0.2m, 0.01m, 10, 264, 3);
+            AddNumberBox(page, "GoTimeoutSec", "GO Timeout (sec)", 60, 1, 3600, 312, 0);
             return page;
         }
 

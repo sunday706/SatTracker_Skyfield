@@ -146,6 +146,8 @@ namespace SatTracker
                 Acceleration = Math.Max(0f, GetFloatSetting("Acceleration", 100)),
                 Deceleration = Math.Max(0f, GetFloatSetting("Deceleration", 100)),
                 TrackingMinRpm = Math.Max(1, GetIntSetting("TrackingMinRpm", 30)),
+                GoToleranceDeg = Math.Max(0.01f, GetFloatSetting("GoToleranceDeg", "TrackingToleranceDeg", 0.2f)),
+                GoTimeoutSec = Math.Max(1, GetIntSetting("GoTimeoutSec", 60)),
                 AziPidKp = Math.Max(0f, GetFloatSetting("AziPidKp", "PidKp", 25)),
                 AziPidKi = Math.Max(0f, GetFloatSetting("AziPidKi", "PidKi", 0.5f)),
                 AziPidKd = Math.Max(0f, GetFloatSetting("AziPidKd", "PidKd", 0.01f)),

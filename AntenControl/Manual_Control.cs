@@ -37,6 +37,8 @@ namespace AntenControl
             public float Acceleration { get; init; } = 100f;
             public float Deceleration { get; init; } = 100f;
             public int TrackingMinRpm { get; init; } = 30;
+            public float GoToleranceDeg { get; init; } = 0.2f;
+            public int GoTimeoutSec { get; init; } = 60;
             public float AziPidKp { get; init; } = 20f;
             public float AziPidKi { get; init; }
             public float AziPidKd { get; init; }
@@ -735,6 +737,8 @@ namespace AntenControl
                 Acceleration = Math.Max(0f, settings.Acceleration),
                 Deceleration = Math.Max(0f, settings.Deceleration),
                 TrackingMinRpm = Math.Max(1, settings.TrackingMinRpm),
+                GoToleranceDeg = Math.Clamp(settings.GoToleranceDeg, 0.01f, 10f),
+                GoTimeoutSec = Math.Clamp(settings.GoTimeoutSec, 1, 3600),
                 AziPidKp = Math.Max(0f, settings.AziPidKp),
                 AziPidKi = Math.Max(0f, settings.AziPidKi),
                 AziPidKd = Math.Max(0f, settings.AziPidKd),
@@ -884,12 +888,17 @@ namespace AntenControl
         {
             if (ch.Drive == null) return;
 
-            const float tolDeg = 0.2f; // sai số mục tiêu cho phép (theo độ)
+            MotionParameters settings = GetMotionParameters();
+            float tolDeg = settings.GoToleranceDeg;
+            TimeSpan timeout = TimeSpan.FromSeconds(settings.GoTimeoutSec);
+            DateTime startedUtc = DateTime.UtcNow;
+            bool stopped = false;
 
             ch.IsGoing = true;
+            ch.Moving = true;
             ApplyUiState(ch);
             ResetPid(ch);
-            SetStatus(ch, $"Go to {targetDeg:F2}° ...");
+            SetStatus(ch, $"Go to {targetDeg:F2} deg ...");
 
             try
             {
@@ -899,6 +908,12 @@ namespace AntenControl
 
                 while (!ct.IsCancellationRequested)
                 {
+                    if (DateTime.UtcNow - startedUtc > timeout)
+                    {
+                        SetStatus(ch, $"GO timeout after {settings.GoTimeoutSec}s.");
+                        break;
+                    }
+
                     if (!TryGetEncoderDeg(ch, currentDegProvider, out var currentDeg))
                     {
                         SetStatus(ch, "Read encoder error.");
@@ -911,13 +926,14 @@ namespace AntenControl
                     if (absErrDeg <= tolDeg)
                     {
                         // Đạt mục tiêu
-                        await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, ct).ConfigureAwait(true);
+                        await SendSpeedRpmAsync(ch, 0, settings, rampToTarget: true, ct).ConfigureAwait(true);
+                        stopped = true;
                         ResetPid(ch);
                         SetStatus(ch, "GO completed.");
                         break;
                     }
 
-                    MotionParameters settings = GetMotionParameters();
+                    settings = GetMotionParameters();
                     int speedRpm = CalculatePidSpeedRpm(ch, errDeg, settings);
                     await SendSpeedRpmAsync(ch, speedRpm, settings, rampToTarget: false, ct).ConfigureAwait(true);
 
@@ -930,8 +946,22 @@ namespace AntenControl
             }
             finally
             {
+                if (!stopped && ch.Drive != null)
+                {
+                    try
+                    {
+                        await SendSpeedRpmAsync(ch, 0, GetMotionParameters(), rampToTarget: true, CancellationToken.None)
+                            .ConfigureAwait(true);
+                    }
+                    catch
+                    {
+                        // Best effort stop; keep UI responsive even if the drive rejects the stop command.
+                    }
+                }
+
                 ch.IsGoing = false;
                 ch.Moving = false;
+                ResetPid(ch);
                 ApplyUiState(ch);
             }
         }
@@ -1158,6 +1188,12 @@ namespace AntenControl
         // =========================
         private async Task StartMoveAsync(AxisChannel ch, int rpmSigned)
         {
+            if (ch.IsGoing)
+            {
+                SetStatus(ch, "GO is running.");
+                return;
+            }
+
             if (!ch.Connected || ch.Drive == null)
             {
                 SetStatus(ch, "Please Connect first.");
@@ -1257,10 +1293,10 @@ namespace AntenControl
 
                 // Optional GO
                 bool axisReadyForGo = ch.Connected && ch.Enabled && !ch.Moving && !ch.IsGoing;
-                bool axisReadyForManual = ch.Connected && ch.Enabled;
+                bool axisReadyForManual = ch.Connected && ch.Enabled && !ch.IsGoing;
                 SetManualButtonsEnabled(ch, axisReadyForManual);
                 if (ch.Ui.BtnGo != null) ch.Ui.BtnGo.Enabled = axisReadyForGo;
-                if (ch.Ui.TxbTargetPosDeg != null) ch.Ui.TxbTargetPosDeg.Enabled = ch.Connected && ch.Enabled;
+                if (ch.Ui.TxbTargetPosDeg != null) ch.Ui.TxbTargetPosDeg.Enabled = ch.Connected && ch.Enabled && !ch.IsGoing;
                 StateChanged?.Invoke();
             });
         }
