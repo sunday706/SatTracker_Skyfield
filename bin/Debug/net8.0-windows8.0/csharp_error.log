@@ -263,3 +263,5 @@ TypeError: 'Timescale' object is not subscriptable
 26/06/2026 11:00:18: Running satellite_passes.exe with TLE file: SatTLE.txt
 26/06/2026 11:11:59: Running satellite_passes.exe with TLE file: SatTLE.txt
 26/06/2026 15:26:44: Running satellite_passes.exe with TLE file: SatTLE.txt
+29/06/2026 11:45:48: Running satellite_passes.exe with TLE file: SatTLE.txt
+29/06/2026 22:45:00: Running satellite_passes.exe with TLE file: SatTLE.txt

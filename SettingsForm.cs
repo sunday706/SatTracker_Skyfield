@@ -217,7 +217,7 @@ namespace SatTracker
             page.Controls.Add(_btnTuneElePid);
 
             page.Controls.Add(CreateSectionLabel("Auto Tune", 408));
-            AddNumberBox(page, "PidAutoTuneAmplitudeDeg", "Tune Amplitude (deg)", 10, 0.1m, 90, 440, 2);
+            AddNumberBox(page, "PidAutoTuneHysteresisDeg", "Hysteresis (deg)", 1, 0.05m, 30, 440, 2);
             AddNumberBox(page, "PidAutoTuneMaxTravelDeg", "Max Travel (deg)", 20, 1, 180, 488, 2);
             AddNumberBox(page, "PidAutoTuneRpm", "Tune RPM", 80, 1, 4100, 536, 0);
 
@@ -464,14 +464,14 @@ namespace SatTracker
 
         private Manual_Control.PidAutoTuneOptions ReadPidAutoTuneOptions()
         {
-            float amplitudeDeg = ReadFloatInput("PidAutoTuneAmplitudeDeg", 10f);
+            float hysteresisDeg = ReadFloatInput("PidAutoTuneHysteresisDeg", 1f);
             float maxTravelDeg = ReadFloatInput("PidAutoTuneMaxTravelDeg", 20f);
             int testRpm = Math.Max(1, (int)Math.Round(ReadFloatInput("PidAutoTuneRpm", 80f)));
 
             return new Manual_Control.PidAutoTuneOptions
             {
-                RelayAmplitudeDeg = amplitudeDeg,
-                MaxTravelDeg = Math.Max(maxTravelDeg, amplitudeDeg + 1f),
+                HysteresisDeg = hysteresisDeg,
+                MaxTravelDeg = Math.Max(maxTravelDeg, hysteresisDeg + 1f),
                 TestRpm = testRpm
             };
         }

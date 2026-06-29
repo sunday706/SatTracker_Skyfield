@@ -48,6 +48,7 @@ namespace AntenControl
         public sealed class PidAutoTuneOptions
         {
             public int TestRpm { get; init; } = 80;
+            public float HysteresisDeg { get; init; } = 1.0f;
             public float RelayAmplitudeDeg { get; init; } = 10.0f;
             public float MaxTravelDeg { get; init; } = 20.0f;
             public int SampleIntervalMs { get; init; } = 50;
@@ -525,19 +526,21 @@ namespace AntenControl
 
             MotionParameters settings = GetMotionParameters();
             int testRpm = Math.Clamp(Math.Abs(options.TestRpm), 1, Math.Max(1, settings.MaxRpm));
-            float relayAmplitudeDeg = Math.Clamp(options.RelayAmplitudeDeg, 0.1f, 30f);
-            float maxTravelDeg = Math.Max(relayAmplitudeDeg + 0.5f, options.MaxTravelDeg);
+            float hysteresisDeg = Math.Clamp(options.HysteresisDeg > 0f
+                ? options.HysteresisDeg
+                : options.RelayAmplitudeDeg, 0.05f, 30f);
+            float maxTravelDeg = Math.Max(hysteresisDeg + 0.5f, options.MaxTravelDeg);
             int sampleIntervalMs = Math.Clamp(options.SampleIntervalMs, 20, 1000);
             int requiredSwitches = Math.Clamp(options.RequiredSwitches, 6, 40);
             TimeSpan timeout = options.Timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(45) : options.Timeout;
 
             float targetDeg = (float)startDeg;
-            float lowLimitDeg = targetDeg - maxTravelDeg;
-            float highLimitDeg = targetDeg + maxTravelDeg;
-            var switchTimes = new System.Collections.Generic.List<DateTime>();
-            float minDeg = targetDeg;
-            float maxDeg = targetDeg;
-            int direction = 1;
+            float lastErrorDeg = 0f;
+            bool hasLastError = false;
+            var crossingTimes = new System.Collections.Generic.List<DateTime>();
+            float minRelativeDeg = 0f;
+            float maxRelativeDeg = 0f;
+            int relayRpm = int.MinValue;
             DateTime startedUtc = DateTime.UtcNow;
 
             ch.MotionCts?.Cancel();
@@ -549,11 +552,10 @@ namespace AntenControl
             {
                 ch.Moving = true;
                 ApplyUiState(ch);
-                SetStatus(ch, $"PID auto tune {ch.Axis}: {testRpm} RPM, +/-{relayAmplitudeDeg:F2} deg");
+                SetStatus(ch, $"PID auto tune {ch.Axis}: relay {testRpm} RPM, hysteresis +/-{hysteresisDeg:F2} deg");
 
                 await ch.Drive.SetOperationModeAsync(3, tuneCt).ConfigureAwait(true);
                 await ch.Drive.SetControlWordAsync(0x000F, tuneCt).ConfigureAwait(true);
-                await SendSpeedRpmAsync(ch, testRpm, settings, rampToTarget: true, tuneCt).ConfigureAwait(true);
 
                 while (!tuneCt.IsCancellationRequested)
                 {
@@ -564,7 +566,7 @@ namespace AntenControl
                             Axis = ch.Axis,
                             Success = false,
                             Message = "PID auto tune timeout before enough oscillation data was collected.",
-                            SwitchCount = switchTimes.Count
+                            SwitchCount = crossingTimes.Count
                         };
                     }
 
@@ -575,46 +577,67 @@ namespace AntenControl
                             Axis = ch.Axis,
                             Success = false,
                             Message = "Encoder read failed during PID auto tune.",
-                            SwitchCount = switchTimes.Count
+                            SwitchCount = crossingTimes.Count
                         };
                     }
 
                     float currentDeg = (float)currentDegDouble;
-                    minDeg = Math.Min(minDeg, currentDeg);
-                    maxDeg = Math.Max(maxDeg, currentDeg);
+                    float errorDeg = GetAxisErrorDeg(ch, targetDeg, currentDeg);
+                    float relativeDeg = -errorDeg;
+                    minRelativeDeg = Math.Min(minRelativeDeg, relativeDeg);
+                    maxRelativeDeg = Math.Max(maxRelativeDeg, relativeDeg);
 
-                    if (currentDeg < lowLimitDeg || currentDeg > highLimitDeg)
+                    if (Math.Abs(relativeDeg) > maxTravelDeg)
                     {
                         return new PidAutoTuneResult
                         {
                             Axis = ch.Axis,
                             Success = false,
                             Message = $"PID auto tune stopped: travel exceeded +/-{maxTravelDeg:F2} deg safety limit.",
-                            SwitchCount = switchTimes.Count
+                            SwitchCount = crossingTimes.Count
                         };
                     }
 
-                    bool switchDirection =
-                        direction > 0 && currentDeg >= targetDeg + relayAmplitudeDeg ||
-                        direction < 0 && currentDeg <= targetDeg - relayAmplitudeDeg;
-
-                    if (switchDirection)
+                    if (hasLastError &&
+                        (lastErrorDeg > 0f && errorDeg <= 0f ||
+                         lastErrorDeg < 0f && errorDeg >= 0f))
                     {
-                        direction *= -1;
-                        switchTimes.Add(DateTime.UtcNow);
-                        await SendSpeedRpmAsync(ch, direction * testRpm, settings, rampToTarget: false, tuneCt).ConfigureAwait(true);
-                        SetStatus(ch, $"PID auto tune {ch.Axis}: switch {switchTimes.Count}/{requiredSwitches}");
+                        crossingTimes.Add(DateTime.UtcNow);
+                        SetStatus(ch, $"PID auto tune {ch.Axis}: crossing {crossingTimes.Count}/{requiredSwitches}");
 
-                        if (switchTimes.Count >= requiredSwitches)
+                        if (crossingTimes.Count >= requiredSwitches)
                         {
                             break;
                         }
                     }
 
+                    lastErrorDeg = errorDeg;
+                    hasLastError = true;
+
+                    int nextRelayRpm;
+                    if (errorDeg > hysteresisDeg)
+                    {
+                        nextRelayRpm = testRpm;
+                    }
+                    else if (errorDeg < -hysteresisDeg)
+                    {
+                        nextRelayRpm = -testRpm;
+                    }
+                    else
+                    {
+                        nextRelayRpm = crossingTimes.Count == 0 ? testRpm : 0;
+                    }
+
+                    if (nextRelayRpm != relayRpm)
+                    {
+                        relayRpm = nextRelayRpm;
+                        await SendSpeedRpmAsync(ch, relayRpm, settings, rampToTarget: false, tuneCt).ConfigureAwait(true);
+                    }
+
                     await Task.Delay(sampleIntervalMs, tuneCt).ConfigureAwait(true);
                 }
 
-                var result = CalculateAutoTuneResult(ch.Axis, testRpm, minDeg, maxDeg, switchTimes);
+                var result = CalculateAutoTuneResult(ch.Axis, testRpm, minRelativeDeg, maxRelativeDeg, crossingTimes);
                 SetStatus(ch, result.Success
                     ? $"PID tune OK: Kp={result.Kp:F3}, Ki={result.Ki:F3}, Kd={result.Kd:F3}"
                     : result.Message);
@@ -627,7 +650,7 @@ namespace AntenControl
                     Axis = ch.Axis,
                     Success = false,
                     Message = "PID auto tune cancelled.",
-                    SwitchCount = switchTimes.Count
+                    SwitchCount = crossingTimes.Count
                 };
             }
             finally

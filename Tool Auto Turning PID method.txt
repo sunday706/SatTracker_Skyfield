@@ -1,0 +1,228 @@
+Để tạo tool Auto Tuning PID cho hệ thống quay góc, bạn nên làm theo hướng thực tế như sau:
+
+1. Mục tiêu hệ thống
+
+Ví dụ hệ thống quay đến góc đặt:
+
+target_angle = 90.0;   // góc cần quay
+current_angle = IMU hoặc encoder đọc về
+error = target_angle - current_angle;
+
+PID điều khiển tốc độ motor:
+
+motor_pwm = PID(error);
+
+Auto tuning sẽ tự tìm:
+
+Kp
+Ki
+Kd
+
+để hệ quay nhanh, ít vượt góc, ít rung.
+
+2. Cách Auto Tuning dễ làm nhất: Relay Auto-Tune
+
+Nguyên lý:
+
+Thay vì dùng PID ngay, tool sẽ điều khiển motor kiểu bật/tắt quanh góc đặt.
+
+Ví dụ:
+
+Nếu góc hiện tại < góc đặt → quay thuận
+Nếu góc hiện tại > góc đặt → quay ngược
+
+Hệ sẽ dao động quanh góc đặt. Từ dao động đó ta đo được:
+
+Tu = chu kỳ dao động
+A  = biên độ dao động góc
+D  = biên độ điều khiển motor
+
+Sau đó tính PID theo công thức Ziegler-Nichols.
+
+3. Quy trình Auto Tuning
+Bước 1: Chọn góc test
+
+Ví dụ:
+
+target_angle = 90.0f;
+Bước 2: Cho motor quay kiểu relay
+if (error > hysteresis)
+{
+    motor_pwm = +relay_pwm;
+}
+else if (error < -hysteresis)
+{
+    motor_pwm = -relay_pwm;
+}
+
+Ví dụ:
+
+relay_pwm = 30;        // % PWM
+hysteresis = 1.0f;     // vùng chết ±1 độ
+Bước 3: Ghi lại các lần góc đi qua điểm đặt
+
+Mỗi lần error đổi dấu thì lưu thời gian.
+
+if ((last_error > 0 && error <= 0) ||
+    (last_error < 0 && error >= 0))
+{
+    crossing_time = HAL_GetTick();
+}
+
+Từ nhiều lần crossing, tính chu kỳ dao động Tu.
+
+4. Tính thông số PID
+
+Relay autotune thường tính gain tới hạn:
+
+Ku = 4D / (πA)
+
+Trong đó:
+
+D = relay_pwm
+A = biên độ dao động góc
+
+Sau đó tính PID:
+
+PID kiểu Ziegler-Nichols
+Kp = 0.6 * Ku
+Ki = 1.2 * Ku / Tu
+Kd = 0.075 * Ku * Tu
+
+Trong đó Tu tính bằng giây.
+
+5. Code khung Auto Tuning
+typedef struct
+{
+    float target_angle;
+    float relay_pwm;
+    float hysteresis;
+
+    float max_angle;
+    float min_angle;
+
+    float last_error;
+    uint32_t last_cross_time;
+    uint32_t cross_times[10];
+    uint8_t cross_count;
+
+    uint8_t tuning_done;
+
+    float Ku;
+    float Tu;
+
+    float Kp;
+    float Ki;
+    float Kd;
+
+} PID_AutoTune_t;
+
+Hàm xử lý auto tuning:
+
+float PID_AutoTune_Process(PID_AutoTune_t *tune, float current_angle)
+{
+    float error = tune->target_angle - current_angle;
+
+    // Track max and min angle
+    if (current_angle > tune->max_angle)
+        tune->max_angle = current_angle;
+
+    if (current_angle < tune->min_angle)
+        tune->min_angle = current_angle;
+
+    // Detect zero crossing
+    if ((tune->last_error > 0 && error <= 0) ||
+        (tune->last_error < 0 && error >= 0))
+    {
+        if (tune->cross_count < 10)
+        {
+            tune->cross_times[tune->cross_count] = HAL_GetTick();
+            tune->cross_count++;
+        }
+    }
+
+    tune->last_error = error;
+
+    // Enough data to calculate PID
+    if (tune->cross_count >= 8)
+    {
+        float A;
+        float D;
+        float Tu_sum = 0;
+
+        A = (tune->max_angle - tune->min_angle) / 2.0f;
+        D = tune->relay_pwm;
+
+        // Calculate average full period
+        for (uint8_t i = 2; i < tune->cross_count - 2; i += 2)
+        {
+            Tu_sum += (tune->cross_times[i + 2] - tune->cross_times[i]) / 1000.0f;
+        }
+
+        tune->Tu = Tu_sum / 2.0f;
+
+        tune->Ku = (4.0f * D) / (3.14159f * A);
+
+        tune->Kp = 0.6f * tune->Ku;
+        tune->Ki = 1.2f * tune->Ku / tune->Tu;
+        tune->Kd = 0.075f * tune->Ku * tune->Tu;
+
+        tune->tuning_done = 1;
+
+        return 0;
+    }
+
+    // Relay control output
+    if (error > tune->hysteresis)
+    {
+        return tune->relay_pwm;
+    }
+    else if (error < -tune->hysteresis)
+    {
+        return -tune->relay_pwm;
+    }
+    else
+    {
+        return 0;
+    }
+}
+6. Cách dùng
+PID_AutoTune_t angle_tune = {
+    .target_angle = 90.0f,
+    .relay_pwm = 30.0f,
+    .hysteresis = 1.0f,
+    .max_angle = -9999.0f,
+    .min_angle = 9999.0f,
+};
+
+Trong vòng lặp:
+
+if (!angle_tune.tuning_done)
+{
+    float pwm = PID_AutoTune_Process(&angle_tune, current_angle);
+
+    Motor_SetPWM(pwm);
+}
+else
+{
+    Motor_Stop();
+
+    printf("Auto Tune Done\r\n");
+    printf("Kp = %.3f\r\n", angle_tune.Kp);
+    printf("Ki = %.3f\r\n", angle_tune.Ki);
+    printf("Kd = %.3f\r\n", angle_tune.Kd);
+}
+7. Lưu ý quan trọng cho hệ quay góc
+
+Với hệ quay góc, nên dùng PID theo dạng:
+
+PID vị trí góc → xuất ra tốc độ quay mong muốn
+
+Không nên cho PID góc xuất trực tiếp PWM quá mạnh, vì dễ vượt góc.
+
+Cấu trúc tốt hơn:
+
+target_angle
+     ↓
+PID góc
+     ↓
