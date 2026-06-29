@@ -625,7 +625,7 @@ namespace AntenControl
                     }
                     else
                     {
-                        nextRelayRpm = crossingTimes.Count == 0 ? testRpm : 0;
+                        nextRelayRpm = relayRpm == int.MinValue ? testRpm : relayRpm;
                     }
 
                     if (nextRelayRpm != relayRpm)
