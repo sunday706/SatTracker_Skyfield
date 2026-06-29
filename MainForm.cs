@@ -1338,18 +1338,21 @@ namespace SatTracker
             _pendingPrepositionBusy = true;
             try
             {
-                float targetAzi = (float)azimuthAnglesSend[0];
-                float targetEle = (float)elevationAnglesSend[0];
                 float minElevationDeg = GetFloatSetting("TrackingMinElevationDeg", 10f);
+                int targetIndex = GetPrepositionTargetIndex(elevationAnglesSend, minElevationDeg);
 
-                if (targetEle < minElevationDeg)
+                if (targetIndex < 0)
                 {
                     _ = _manual.StopManualMoveAsync(Manual_Control.Axis.Azimuth);
                     _ = _manual.StopManualMoveAsync(Manual_Control.Axis.Elevation);
                     UpdatePendingTrackingInfo(
-                        $"Đang chờ, chưa quay anten vì Elevation điểm đầu {targetEle:F2}° nhỏ hơn ngưỡng {minElevationDeg:F2}°.");
+                        $"Đang chờ, chưa quay anten vì toàn bộ quỹ đạo hiện có đều thấp hơn ngưỡng {minElevationDeg:F2}°.");
                     return;
                 }
+
+                float targetAzi = (float)azimuthAnglesSend[targetIndex];
+                float targetEle = (float)elevationAnglesSend[targetIndex];
+                DateTime targetTime = timeStampsSend[Math.Min(targetIndex, timeStampsSend.Count - 1)];
 
                 if (!IsServoReady(Manual_Control.Axis.Azimuth) || !IsServoReady(Manual_Control.Axis.Elevation))
                 {
@@ -1370,7 +1373,7 @@ namespace SatTracker
                     _manual.TrackAxisToTargetAsync(Manual_Control.Axis.Elevation, targetEle, toleranceDeg));
 
                 UpdatePendingTrackingInfo(
-                    $"Đang đưa anten tới điểm đầu track để chờ sẵn: Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
+                    $"Đang đưa anten tới điểm chờ sẵn tại {targetTime:HH:mm:ss}: Azi {targetAzi:F2}°, Ele {targetEle:F2}°.");
             }
             catch (Exception ex)
             {
@@ -1380,6 +1383,19 @@ namespace SatTracker
             {
                 _pendingPrepositionBusy = false;
             }
+        }
+
+        private static int GetPrepositionTargetIndex(List<double> elevationAngles, float minElevationDeg)
+        {
+            for (int i = 0; i < elevationAngles.Count; i++)
+            {
+                if (elevationAngles[i] >= minElevationDeg)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private void UpdatePendingTrackingInfo(string extraMessage = "")
